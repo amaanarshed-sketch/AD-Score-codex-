@@ -1,0 +1,28 @@
+import "../index.css";
+import localFont from "next/font/local";
+
+const geistSans = localFont({
+  src: "../../node_modules/next/dist/next-devtools/server/font/geist-latin.woff2",
+  variable: "--font-geist-sans",
+  display: "swap",
+});
+
+const geistMono = localFont({
+  src: "../../node_modules/next/dist/next-devtools/server/font/geist-mono-latin.woff2",
+  variable: "--font-geist-mono",
+  display: "swap",
+});
+
+export const metadata = {
+  title: "AdScore | AI Ad Evaluation",
+  description: "Score ad copy, get direct response feedback, and compare variants before spending media budget.",
+  metadataBase: new URL("https://adscore.ai"),
+};
+
+export default function RootLayout({ children }) {
+  return (
+    <html lang="en">
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>{children}</body>
+    </html>
+  );
+}

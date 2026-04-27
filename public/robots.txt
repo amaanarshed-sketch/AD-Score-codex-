@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Allow: /pricing
+Disallow: /results
+Disallow: /dashboard
+
+Sitemap: https://adscore.ai/sitemap.xml
