@@ -10,6 +10,7 @@ const plans = [
     cta: "Start free",
     href: "/dashboard",
     badge: "Live now",
+    available: true,
     featured: false,
     features: [
       "5 text/link analyses per month",
@@ -23,8 +24,8 @@ const plans = [
     price: "$15",
     note: "For solo marketers testing ads every week",
     cta: "Join early access",
-    href: "/dashboard",
     badge: "Coming soon",
+    available: false,
     featured: true,
     features: [
       "150 credits per month",
@@ -39,8 +40,8 @@ const plans = [
     price: "$39",
     note: "For teams and agencies running repeat tests",
     cta: "Join early access",
-    href: "/dashboard",
     badge: "Coming soon",
+    available: false,
     featured: false,
     features: [
       "750 credits per month",
@@ -100,17 +101,26 @@ export default function PricingPage() {
               </div>
               <p className="mt-3 min-h-12 text-sm leading-6 text-slate-400">{plan.note}</p>
 
-              <Link
-                href={plan.href}
-                className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black transition ${
-                  plan.featured
-                    ? "bg-cyan-300 text-slate-950 hover:bg-cyan-200"
-                    : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-                }`}
-              >
-                {plan.cta}
-                <ArrowRight size={16} />
-              </Link>
+              {plan.available ? (
+                <Link
+                  href="/dashboard"
+                  className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
+                >
+                  {plan.cta}
+                  <ArrowRight size={16} />
+                </Link>
+              ) : (
+                <button
+                  type="button"
+                  disabled
+                  className={`mt-6 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black opacity-75 ${
+                    plan.featured ? "bg-cyan-300 text-slate-950" : "border border-white/10 bg-white/5 text-white"
+                  }`}
+                  aria-label={`${plan.name} plan coming soon`}
+                >
+                  Coming soon
+                </button>
+              )}
 
               <ul className="mt-6 space-y-3">
                 {plan.features.map((feature) => (

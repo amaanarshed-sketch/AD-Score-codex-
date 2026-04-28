@@ -20,7 +20,7 @@ function AdnexMark({ className = "" }) {
 export default function Navbar() {
   return (
     <header className="border-b border-white/10 bg-slate-950/80 backdrop-blur">
-      <div className="mx-auto flex h-[72px] max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex min-h-[72px] max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Link href="/" className="flex items-center gap-3">
           <span className="flex h-9 w-9 items-center justify-center">
             <AdnexMark className="h-9 w-9 drop-shadow-[0_18px_38px_rgba(255,255,255,0.16)]" />
@@ -32,14 +32,14 @@ export default function Navbar() {
           <Link href="/pricing" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">
             Pricing
           </Link>
-          <Link href="/dashboard" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white min-[420px]:inline-flex">
+          <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">
             Dashboard
           </Link>
           <Link href="/history" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white md:inline-flex">
             History
           </Link>
-          <Link href="/compare" className="hidden rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15 sm:inline-flex">
-            Compare Ads
+          <Link href="/compare" className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15">
+            Compare
           </Link>
         </nav>
       </div>
