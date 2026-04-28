@@ -54,8 +54,8 @@ const plans = [
 ];
 
 export const metadata = {
-  title: "Pricing | AdScore",
-  description: "Simple early pricing for AdScore, the AI ad evaluation tool for marketers.",
+  title: "Pricing | Adnex",
+  description: "Simple early pricing for Adnex, the AI ad evaluation tool for marketers.",
 };
 
 export default function PricingPage() {
@@ -73,7 +73,7 @@ export default function PricingPage() {
             Costs less than one bad ad test.
           </h1>
           <p className="mt-5 text-lg leading-8 text-slate-300">
-            Start free while we validate the product. Paid plans are here to set expectations, not block you from trying AdScore.
+            Start free while we validate the product. Paid plans are here to set expectations, not block you from trying Adnex.
           </p>
         </div>
 
@@ -136,7 +136,7 @@ export default function PricingPage() {
               </div>
             </div>
             <Link href="/dashboard" className="inline-flex shrink-0 items-center justify-center rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
-              Try AdScore
+              Try Adnex
             </Link>
           </div>
         </div>

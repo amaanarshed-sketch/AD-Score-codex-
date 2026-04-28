@@ -1,9 +1,13 @@
-const historyKey = "adscore:analysis-history";
+const historyKey = "adnex:analysis-history";
+const legacyHistoryKey = "adscore:analysis-history";
 
 export function getAnalysisHistory() {
   if (typeof window === "undefined") return [];
   try {
-    const stored = JSON.parse(localStorage.getItem(historyKey) || "[]");
+    const current = localStorage.getItem(historyKey);
+    const legacy = localStorage.getItem(legacyHistoryKey);
+    if (!current && legacy) localStorage.setItem(historyKey, legacy);
+    const stored = JSON.parse(current || legacy || "[]");
     return Array.isArray(stored) ? stored : [];
   } catch {
     return [];

@@ -9,7 +9,7 @@ import ScoreResult from "../../components/ScoreResult";
 export default function ResultsPage() {
   const [payload] = useState(() => {
     if (typeof window === "undefined") return null;
-    const stored = sessionStorage.getItem("adscore:last-result");
+    const stored = sessionStorage.getItem("adnex:last-result") || sessionStorage.getItem("adscore:last-result");
     return stored ? JSON.parse(stored) : null;
   });
 

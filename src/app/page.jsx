@@ -36,7 +36,7 @@ export default function Home() {
               href="/dashboard"
               className="premium-button inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
             >
-              Try AdScore
+              Try Adnex
               <ArrowRight size={17} />
             </Link>
             <Link
@@ -74,7 +74,7 @@ export default function Home() {
         <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-[0.9fr_1.1fr] md:items-center">
           <div>
             <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-cyan-300">Value for money</p>
-            <h2 className="text-3xl font-black tracking-tight md:text-4xl">AdScore should pay for itself before launch.</h2>
+            <h2 className="text-3xl font-black tracking-tight md:text-4xl">Adnex should pay for itself before launch.</h2>
             <p className="mt-4 max-w-xl text-sm leading-7 text-slate-400">
               Start free, validate the scoring, then upgrade only when you need more analyses, saved history, and reporting.
             </p>

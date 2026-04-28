@@ -201,7 +201,7 @@ input {
   background: rgba(103, 232, 249, 0.28);
 }
 
-.adscore-scene {
+.adnex-scene {
   min-height: 460px;
   perspective: 1200px;
   perspective-origin: 50% 40%;
@@ -211,7 +211,7 @@ input {
   isolation: isolate;
 }
 
-.adscore-scene__stage {
+.adnex-scene__stage {
   position: relative;
   width: min(100%, 460px);
   transform-style: preserve-3d;
@@ -220,7 +220,7 @@ input {
   will-change: transform;
 }
 
-.adscore-scene__halo {
+.adnex-scene__halo {
   position: absolute;
   border: 1px solid rgba(103, 232, 249, 0.18);
   background:
@@ -230,7 +230,7 @@ input {
   pointer-events: none;
 }
 
-.adscore-scene__halo--one {
+.adnex-scene__halo--one {
   width: 118px;
   height: 118px;
   top: -38px;
@@ -239,7 +239,7 @@ input {
   transform: translateZ(18px) rotateZ(14deg);
 }
 
-.adscore-scene__halo--two {
+.adnex-scene__halo--two {
   width: 88px;
   height: 88px;
   left: 0;
@@ -248,7 +248,7 @@ input {
   transform: translateZ(10px) rotateZ(-12deg);
 }
 
-.adscore-scene__plane {
+.adnex-scene__plane {
   position: absolute;
   inset: 28px;
   border: 1px solid rgba(103, 232, 249, 0.16);
@@ -262,15 +262,15 @@ input {
   transform-style: preserve-3d;
 }
 
-.adscore-scene__plane--back {
+.adnex-scene__plane--back {
   transform: translate3d(-26px, 24px, -110px) rotateZ(-7deg);
 }
 
-.adscore-scene__plane--mid {
+.adnex-scene__plane--mid {
   transform: translate3d(22px, -18px, -56px) rotateZ(5deg);
 }
 
-.adscore-scene__card {
+.adnex-scene__card {
   position: relative;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 18px;
@@ -287,7 +287,7 @@ input {
   overflow: hidden;
 }
 
-.adscore-scene__card::before {
+.adnex-scene__card::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -299,7 +299,7 @@ input {
   pointer-events: none;
 }
 
-.adscore-scene__card::after {
+.adnex-scene__card::after {
   content: "";
   position: absolute;
   inset: -40% -60%;
@@ -309,7 +309,7 @@ input {
   pointer-events: none;
 }
 
-.adscore-scene__scan {
+.adnex-scene__scan {
   position: absolute;
   left: 0;
   right: 0;
@@ -321,7 +321,7 @@ input {
   opacity: 0.85;
 }
 
-.adscore-scene__chip {
+.adnex-scene__chip {
   position: absolute;
   z-index: 4;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -336,21 +336,21 @@ input {
   transform-style: preserve-3d;
 }
 
-.adscore-scene__chip--one {
+.adnex-scene__chip--one {
   top: 44px;
   left: -34px;
   transform: translateZ(86px) rotateZ(-5deg);
   animation: chipDrift 7s ease-in-out infinite;
 }
 
-.adscore-scene__chip--two {
+.adnex-scene__chip--two {
   right: -38px;
   top: 190px;
   transform: translateZ(104px) rotateZ(4deg);
   animation: chipDrift 8s ease-in-out infinite reverse;
 }
 
-.adscore-scene__chip--three {
+.adnex-scene__chip--three {
   left: 98px;
   bottom: -18px;
   color: #a7f3d0;
@@ -358,13 +358,13 @@ input {
   animation: chipDrift 7.5s ease-in-out infinite;
 }
 
-.adscore-scene__header,
-.adscore-scene__bars,
-.adscore-scene__footer {
+.adnex-scene__header,
+.adnex-scene__bars,
+.adnex-scene__footer {
   position: relative;
 }
 
-.adscore-scene__header {
+.adnex-scene__header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -372,7 +372,7 @@ input {
   margin-bottom: 24px;
 }
 
-.adscore-scene__header span {
+.adnex-scene__header span {
   display: block;
   color: #94a3b8;
   font-size: 0.78rem;
@@ -381,7 +381,7 @@ input {
   letter-spacing: 0.12em;
 }
 
-.adscore-scene__header strong {
+.adnex-scene__header strong {
   display: block;
   margin-top: 8px;
   color: #f8fafc;
@@ -389,7 +389,7 @@ input {
   line-height: 1.1;
 }
 
-.adscore-scene__score {
+.adnex-scene__score {
   color: #67e8f9;
   font-size: 4.5rem;
   font-weight: 950;
@@ -397,12 +397,12 @@ input {
   text-shadow: 0 0 32px rgba(103, 232, 249, 0.3);
 }
 
-.adscore-scene__bars {
+.adnex-scene__bars {
   display: grid;
   gap: 14px;
 }
 
-.adscore-scene__bar-label {
+.adnex-scene__bar-label {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -413,25 +413,25 @@ input {
   margin-bottom: 7px;
 }
 
-.adscore-scene__bar-label span:last-child {
+.adnex-scene__bar-label span:last-child {
   color: #64748b;
 }
 
-.adscore-scene__bar-track {
+.adnex-scene__bar-track {
   height: 8px;
   border-radius: 999px;
   background: rgba(30, 41, 59, 0.9);
   overflow: hidden;
 }
 
-.adscore-scene__bar-track div {
+.adnex-scene__bar-track div {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #22d3ee, #a7f3d0);
   box-shadow: 0 0 20px rgba(34, 211, 238, 0.34);
 }
 
-.adscore-scene__footer {
+.adnex-scene__footer {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -443,7 +443,7 @@ input {
   font-weight: 800;
 }
 
-.adscore-scene__footer span:last-child {
+.adnex-scene__footer span:last-child {
   color: #67e8f9;
 }
 
@@ -541,18 +541,18 @@ input {
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.26) inset, 0 20px 70px rgba(34, 211, 238, 0.22);
 }
 
-.adscore-scene {
+.adnex-scene {
   width: min(100%, 720px);
   min-height: 430px;
   margin-top: 38px;
 }
 
-.adscore-scene__stage {
+.adnex-scene__stage {
   width: min(100%, 620px);
   transform: rotateX(2deg);
 }
 
-.adscore-scene__card {
+.adnex-scene__card {
   border-radius: 26px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.035)),
@@ -564,13 +564,13 @@ input {
   padding: 28px;
 }
 
-.adscore-scene__card::before {
+.adnex-scene__card::before {
   background-image:
     linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
 }
 
-.adscore-scene__topline {
+.adnex-scene__topline {
   position: relative;
   z-index: 2;
   display: flex;
@@ -584,18 +584,18 @@ input {
   letter-spacing: 0.14em;
 }
 
-.adscore-scene__topline strong {
+.adnex-scene__topline strong {
   color: #fed7aa;
 }
 
-.adscore-scene__score {
+.adnex-scene__score {
   color: #f8fafc;
   font-size: 5.6rem;
   letter-spacing: -0.08em;
   text-shadow: 0 0 56px rgba(255, 92, 64, 0.36);
 }
 
-.adscore-scene__verdict {
+.adnex-scene__verdict {
   position: relative;
   z-index: 2;
   width: fit-content;
@@ -609,17 +609,17 @@ input {
   font-weight: 900;
 }
 
-.adscore-scene__bar-track {
+.adnex-scene__bar-track {
   height: 9px;
   background: rgba(15, 23, 42, 0.96);
 }
 
-.adscore-scene__bar-track div {
+.adnex-scene__bar-track div {
   background: linear-gradient(90deg, #fb7185, #f97316 44%, #22d3ee);
   box-shadow: 0 0 26px rgba(249, 115, 22, 0.34);
 }
 
-.adscore-scene__rewrite {
+.adnex-scene__rewrite {
   position: relative;
   z-index: 2;
   margin-top: 20px;
@@ -633,7 +633,7 @@ input {
   line-height: 1.45;
 }
 
-.adscore-scene__rewrite span {
+.adnex-scene__rewrite span {
   display: block;
   margin-bottom: 5px;
   color: #64748b;
@@ -643,12 +643,12 @@ input {
   letter-spacing: 0.14em;
 }
 
-.adscore-scene__chip {
+.adnex-scene__chip {
   background: rgba(8, 11, 18, 0.72);
   box-shadow: 0 18px 70px rgba(0, 0, 0, 0.38), 0 0 42px rgba(255, 92, 64, 0.12);
 }
 
-.adscore-scene__chip--two {
+.adnex-scene__chip--two {
   color: #fed7aa;
 }
 
@@ -745,8 +745,8 @@ body > main:not(.site-shell) .bg-cyan-300 {
   letter-spacing: 0.02em;
 }
 
-.adscore-scene__halo,
-.adscore-scene__plane {
+.adnex-scene__halo,
+.adnex-scene__plane {
   border-color: rgba(255, 255, 255, 0.1);
   background:
     linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.012)),
@@ -754,7 +754,7 @@ body > main:not(.site-shell) .bg-cyan-300 {
   box-shadow: 0 24px 90px rgba(0, 0, 0, 0.28);
 }
 
-.adscore-scene__card {
+.adnex-scene__card {
   border-color: rgba(255, 255, 255, 0.12);
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.025)),
@@ -765,40 +765,40 @@ body > main:not(.site-shell) .bg-cyan-300 {
     0 0 110px rgba(255, 255, 255, 0.09);
 }
 
-.adscore-scene__scan {
+.adnex-scene__scan {
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
   box-shadow: 0 0 28px rgba(255, 255, 255, 0.24);
 }
 
-.adscore-scene__topline strong,
-.adscore-scene__verdict,
-.adscore-scene__chip--two,
-.adscore-scene__footer,
-.adscore-scene__footer span:last-child {
+.adnex-scene__topline strong,
+.adnex-scene__verdict,
+.adnex-scene__chip--two,
+.adnex-scene__footer,
+.adnex-scene__footer span:last-child {
   color: #f8fafc;
 }
 
-.adscore-scene__score {
+.adnex-scene__score {
   color: #ffffff;
   text-shadow: 0 0 58px rgba(255, 255, 255, 0.22);
 }
 
-.adscore-scene__verdict {
+.adnex-scene__verdict {
   border-color: rgba(255, 255, 255, 0.16);
   background: rgba(255, 255, 255, 0.07);
 }
 
-.adscore-scene__bar-track div {
+.adnex-scene__bar-track div {
   background: linear-gradient(90deg, #5b6472, #e5e7eb);
   box-shadow: 0 0 26px rgba(255, 255, 255, 0.18);
 }
 
-.adscore-scene__rewrite {
+.adnex-scene__rewrite {
   background: rgba(255, 255, 255, 0.055);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
 }
 
-.adscore-scene__chip {
+.adnex-scene__chip {
   color: #e5e7eb;
   background: rgba(12, 12, 12, 0.76);
   box-shadow: 0 18px 70px rgba(0, 0, 0, 0.42), 0 0 42px rgba(255, 255, 255, 0.075);
@@ -988,29 +988,29 @@ body > main:not(.site-shell) .text-emerald-300 {
 }
 
 @media (max-width: 768px) {
-  .adscore-scene {
+  .adnex-scene {
     display: none;
   }
 
-  .adscore-scene__stage {
+  .adnex-scene__stage {
     animation: none;
     transform: none;
   }
 
-  .adscore-scene__card {
+  .adnex-scene__card {
     padding: 20px;
     backdrop-filter: none;
   }
 
-  .adscore-scene__score {
+  .adnex-scene__score {
     font-size: 3.7rem;
   }
 
-  .adscore-scene__chip {
+  .adnex-scene__chip {
     display: none;
   }
 
-  .adscore-scene__halo--one {
+  .adnex-scene__halo--one {
     right: -4px;
   }
 }
@@ -1020,7 +1020,7 @@ body > main:not(.site-shell) .text-emerald-300 {
     scroll-behavior: auto;
   }
 
-  .adscore-scene__stage,
+  .adnex-scene__stage,
   .depth-card {
     transition: none;
     transform: none !important;
@@ -1028,12 +1028,12 @@ body > main:not(.site-shell) .text-emerald-300 {
 
   .site-shell::before,
   .glass-pill::after,
-  .adscore-scene__stage,
-  .adscore-scene__card::after,
-  .adscore-scene__scan,
-  .adscore-scene__halo,
-  .adscore-scene__chip,
-  .adscore-scene__bar-track div {
+  .adnex-scene__stage,
+  .adnex-scene__card::after,
+  .adnex-scene__scan,
+  .adnex-scene__halo,
+  .adnex-scene__chip,
+  .adnex-scene__bar-track div {
     animation: none;
   }
 }

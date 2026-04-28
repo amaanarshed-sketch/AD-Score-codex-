@@ -7,47 +7,47 @@ const metrics = [
 
 export default function ScrollScene() {
   return (
-    <div className="adscore-scene">
-      <div className="adscore-scene__stage">
-        <div className="adscore-scene__halo adscore-scene__halo--one" />
-        <div className="adscore-scene__halo adscore-scene__halo--two" />
-        <div className="adscore-scene__plane adscore-scene__plane--back" />
-        <div className="adscore-scene__plane adscore-scene__plane--mid" />
-        <div className="adscore-scene__chip adscore-scene__chip--one">TikTok detected</div>
-        <div className="adscore-scene__chip adscore-scene__chip--two">Weak offer risk</div>
-        <div className="adscore-scene__chip adscore-scene__chip--three">Recommended: B</div>
-        <div className="adscore-scene__card">
-          <div className="adscore-scene__scan" />
-          <div className="adscore-scene__topline">
-            <span>AdScore analysis</span>
+    <div className="adnex-scene">
+      <div className="adnex-scene__stage">
+        <div className="adnex-scene__halo adnex-scene__halo--one" />
+        <div className="adnex-scene__halo adnex-scene__halo--two" />
+        <div className="adnex-scene__plane adnex-scene__plane--back" />
+        <div className="adnex-scene__plane adnex-scene__plane--mid" />
+        <div className="adnex-scene__chip adnex-scene__chip--one">TikTok detected</div>
+        <div className="adnex-scene__chip adnex-scene__chip--two">Weak offer risk</div>
+        <div className="adnex-scene__chip adnex-scene__chip--three">Recommended: B</div>
+        <div className="adnex-scene__card">
+          <div className="adnex-scene__scan" />
+          <div className="adnex-scene__topline">
+            <span>Adnex analysis</span>
             <strong>High confidence</strong>
           </div>
-          <div className="adscore-scene__header">
+          <div className="adnex-scene__header">
             <div>
               <span>Decision</span>
               <strong>Run Variant B first</strong>
             </div>
-            <div className="adscore-scene__score">82</div>
+            <div className="adnex-scene__score">82</div>
           </div>
-          <div className="adscore-scene__verdict">Recommended to run</div>
-          <div className="adscore-scene__bars">
+          <div className="adnex-scene__verdict">Recommended to run</div>
+          <div className="adnex-scene__bars">
             {metrics.map(([label, score, max]) => (
               <div key={label}>
-                <div className="adscore-scene__bar-label">
+                <div className="adnex-scene__bar-label">
                   <span>{label}</span>
                   <span>{score}/{max}</span>
                 </div>
-                <div className="adscore-scene__bar-track">
+                <div className="adnex-scene__bar-track">
                   <div style={{ width: `${(score / max) * 100}%` }} />
                 </div>
               </div>
             ))}
           </div>
-          <div className="adscore-scene__rewrite">
+          <div className="adnex-scene__rewrite">
             <span>Better hook</span>
             Stop wasting budget on ads your buyers scroll past.
           </div>
-          <div className="adscore-scene__footer">
+          <div className="adnex-scene__footer">
             <span>Compare-ready</span>
             <span>Budget risk reduced</span>
           </div>

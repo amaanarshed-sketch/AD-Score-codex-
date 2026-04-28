@@ -31,7 +31,7 @@ export default function ProductStatus() {
       </p>
       <p className="mt-2 text-sm leading-6 text-slate-400">
         {status.aiConfigured
-          ? "AdScore is connected to AI analysis. Links still provide platform/context only unless scraping is added later."
+          ? "Adnex is connected to AI analysis. Links still provide platform/context only unless scraping is added later."
           : "You can test the full product flow without paid AI calls. Scores use the built-in demo engine until an API key is connected."}
       </p>
       <p className="mt-2 text-xs leading-5 text-slate-500">

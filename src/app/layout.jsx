@@ -14,9 +14,9 @@ const geistMono = localFont({
 });
 
 export const metadata = {
-  title: "AdScore | AI Ad Evaluation",
+  title: "Adnex | AI Ad Decisioning",
   description: "Score ad copy, get direct response feedback, and compare variants before spending media budget.",
-  metadataBase: new URL("https://adscore.ai"),
+  metadataBase: new URL("https://getadnex.com"),
 };
 
 export default function RootLayout({ children }) {

@@ -43,7 +43,7 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error(data.error || "Analysis failed.");
 
       const storedAd = { ...ad, imageData: "", creativePreview: "" };
-      sessionStorage.setItem("adscore:last-result", JSON.stringify({ result: data, ad: storedAd, context }));
+      sessionStorage.setItem("adnex:last-result", JSON.stringify({ result: data, ad: storedAd, context }));
       saveAnalysisHistory({
         type: "single",
         title: storedAd.adCopy?.slice(0, 72) || storedAd.creativeFilename || storedAd.postLink || "Single ad analysis",
@@ -87,7 +87,7 @@ export default function DashboardPage() {
             <p className="text-sm font-black uppercase tracking-[0.18em] text-cyan-300">Single Analysis</p>
             <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">Score one ad before launch.</h1>
             <p className="mt-3 max-w-2xl text-slate-400">
-              Provide copy, a creative, a post link, or any combination. AdScore will judge the campaign context and return a strict launch recommendation.
+              Provide copy, a creative, a post link, or any combination. Adnex will judge the campaign context and return a strict launch recommendation.
             </p>
           </div>
           <Link
