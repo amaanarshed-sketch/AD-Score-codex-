@@ -1,5 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, Check, Clock, Sparkles } from "lucide-react";
+import AuthCard from "../../components/AuthCard";
+import BillingStatus from "../../components/BillingStatus";
+import CheckoutButton from "../../components/CheckoutButton";
 import Navbar from "../../components/Navbar";
 
 const plans = [
@@ -24,8 +27,8 @@ const plans = [
     price: "$15",
     note: "For solo marketers testing ads every week",
     cta: "Join early access",
-    badge: "Coming soon",
-    available: false,
+    badge: "Checkout ready",
+    available: true,
     featured: true,
     features: [
       "150 credits per month",
@@ -41,8 +44,8 @@ const plans = [
     price: "$39",
     note: "For teams and agencies running repeat tests",
     cta: "Join early access",
-    badge: "Coming soon",
-    available: false,
+    badge: "Checkout ready",
+    available: true,
     featured: false,
     features: [
       "750 credits per month",
@@ -70,14 +73,19 @@ export default function PricingPage() {
         <div className="mx-auto max-w-3xl text-center">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-sm font-medium text-cyan-200">
             <Sparkles size={15} />
-            Early pricing, no payment required yet
+            Early pricing with Lemon Squeezy checkout
           </div>
           <h1 className="text-5xl font-black tracking-tight md:text-6xl">
             Costs less than one bad ad test.
           </h1>
           <p className="mt-5 text-lg leading-8 text-slate-300">
-            Start free while we validate the product. Paid plans are here to set expectations, not block you from trying Adnex.
+            Start free while we validate the product. Upgrade when you need paid creative audits and more monthly credits.
           </p>
+        </div>
+
+        <div className="mt-8 grid gap-5 lg:grid-cols-2">
+          <AuthCard />
+          <BillingStatus />
         </div>
 
         <div className="mt-12 grid gap-5 lg:grid-cols-3">
@@ -103,7 +111,7 @@ export default function PricingPage() {
               </div>
               <p className="mt-3 min-h-12 text-sm leading-6 text-slate-400">{plan.note}</p>
 
-              {plan.available ? (
+              {plan.name === "Free" ? (
                 <Link
                   href="/dashboard"
                   className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
@@ -112,16 +120,9 @@ export default function PricingPage() {
                   <ArrowRight size={16} />
                 </Link>
               ) : (
-                <button
-                  type="button"
-                  disabled
-                  className={`mt-6 inline-flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black opacity-75 ${
-                    plan.featured ? "bg-cyan-300 text-slate-950" : "border border-white/10 bg-white/5 text-white"
-                  }`}
-                  aria-label={`${plan.name} plan coming soon`}
-                >
-                  Coming soon
-                </button>
+                <CheckoutButton plan={plan.name.toLowerCase()} featured={plan.featured}>
+                  Upgrade to {plan.name}
+                </CheckoutButton>
               )}
 
               <ul className="mt-6 space-y-3">
@@ -143,7 +144,7 @@ export default function PricingPage() {
               <div>
                 <h2 className="font-black">When payments turn on</h2>
                 <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                  We will add checkout after enough users hit the free limit or ask for image analysis, saved history, exports, and higher usage. Until then, pricing helps validate demand without slowing adoption.
+                  Checkout uses Lemon Squeezy in test mode by default. Add the Lemon Squeezy and Supabase environment variables in Vercel before accepting real payments.
                 </p>
               </div>
             </div>

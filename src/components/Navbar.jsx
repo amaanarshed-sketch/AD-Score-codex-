@@ -38,6 +38,9 @@ export default function Navbar() {
           <Link href="/history" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white md:inline-flex">
             History
           </Link>
+          <Link href="/account" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white sm:inline-flex">
+            Account
+          </Link>
           <Link href="/compare" className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15">
             Compare
           </Link>

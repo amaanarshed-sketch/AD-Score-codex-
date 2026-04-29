@@ -5,8 +5,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRight, BadgeCheck, GitCompareArrows, Loader2, Sparkles } from "lucide-react";
 import AdInputBlock, { apiAdPayload, emptyAdInput, validateAdInput } from "../../components/AdInputBlock";
+import AuthCard from "../../components/AuthCard";
+import BillingStatus from "../../components/BillingStatus";
 import Navbar from "../../components/Navbar";
 import ProductStatus from "../../components/ProductStatus";
+import { useAuth } from "../../components/AuthProvider";
 import { saveAnalysisHistory } from "../../lib/history";
 
 const platforms = ["Meta / Facebook / Instagram", "TikTok", "Google Ads", "LinkedIn"];
@@ -14,6 +17,7 @@ const objectives = ["Conversions", "Leads", "Engagement", "Traffic", "Awareness"
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { getAccessToken } = useAuth();
   const [ad, setAd] = useState(emptyAdInput);
   const [platform, setPlatform] = useState(platforms[0]);
   const [platformSource, setPlatformSource] = useState({ type: "manual", label: "" });
@@ -34,9 +38,10 @@ export default function DashboardPage() {
 
     try {
       const context = { platform, objective, audience };
+      const token = await getAccessToken();
       const response = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({ ...context, ...apiAdPayload(ad, "A") }),
       });
       const data = await response.json();
@@ -147,6 +152,8 @@ export default function DashboardPage() {
               </label>
             </div>
 
+            <AuthCard />
+            <BillingStatus compact />
             <ProductStatus />
           </aside>
 

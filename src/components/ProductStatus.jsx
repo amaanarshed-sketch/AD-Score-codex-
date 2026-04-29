@@ -35,7 +35,9 @@ export default function ProductStatus() {
           : "You can test the full product flow without paid AI calls. Scores, image reviews, and video audit sections use the built-in demo engine until the AI/video pipeline is connected."}
       </p>
       <p className="mt-2 text-xs leading-5 text-slate-500">
-        {status.storageConfigured ? "Cloud storage appears configured." : "Uploads preview locally for now. Saved analyses stay in this browser."}
+        {status.billingConfigured
+          ? "Auth, billing, and subscription config appear ready."
+          : "Billing is not fully configured yet. Add Supabase + Lemon Squeezy env vars before live payments."}
       </p>
     </section>
   );

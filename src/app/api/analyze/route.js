@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { authorizeAnalysisRequest, recordUsage } from "../../../lib/billingServer";
 
 const SCORE_MAX = {
   platform_fit: 15,
@@ -525,13 +526,16 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const context = cleanContext(body);
-    const allowImageAnalysis = Boolean(body.allowImageAnalysis);
 
     if (body.compare) {
       const ads = (Array.isArray(body.ads) ? body.ads : []).slice(0, 4).map(cleanAd).filter(hasInput);
       if (ads.length < 2) return NextResponse.json({ error: "At least two ads need copy, creative, or a post link." }, { status: 400 });
+      const auth = await authorizeAnalysisRequest(request, { compare: true, ads });
+      if (!auth.allowed) return auth.response;
       try {
-        return NextResponse.json(process.env.OPENAI_API_KEY ? await compareWithOpenAI(context, ads, allowImageAnalysis) : compareMock(context, ads));
+        const result = process.env.OPENAI_API_KEY ? await compareWithOpenAI(context, ads, auth.allowImageAnalysis) : compareMock(context, ads);
+        await recordUsage(auth, "compare", { ad_count: ads.length, creative_types: ads.map((ad) => ad.creativeType) });
+        return NextResponse.json(result);
       } catch (error) {
         console.error("Compare AI failed, returning mock:", error);
         return NextResponse.json(compareMock(context, ads));
@@ -540,8 +544,12 @@ export async function POST(request) {
 
     const ad = cleanAd(body);
     if (!hasInput(ad)) return NextResponse.json({ error: "Provide ad copy, a creative upload, or an ad/post link." }, { status: 400 });
+    const auth = await authorizeAnalysisRequest(request, { ad });
+    if (!auth.allowed) return auth.response;
     try {
-      return NextResponse.json(await analyzeSingle(context, ad, allowImageAnalysis));
+      const result = await analyzeSingle(context, ad, auth.allowImageAnalysis);
+      await recordUsage(auth, "single", { creative_type: ad.creativeType });
+      return NextResponse.json(result);
     } catch (error) {
       console.error("Analyze AI failed, returning mock:", error);
       return NextResponse.json(mockSingle(context, ad));

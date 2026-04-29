@@ -3,6 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ArrowLeft, BadgeCheck, GitCompareArrows, Loader2, Plus, Sparkles, Trash2, Trophy } from "lucide-react";
+import AuthCard from "../../components/AuthCard";
+import BillingStatus from "../../components/BillingStatus";
+import { useAuth } from "../../components/AuthProvider";
 import AdInputBlock, { apiAdPayload, emptyAdInput, validateAdInput } from "../../components/AdInputBlock";
 import Navbar from "../../components/Navbar";
 import ProductStatus from "../../components/ProductStatus";
@@ -56,6 +59,7 @@ function ScoreCell({ value, max }) {
 }
 
 export default function ComparePage() {
+  const { getAccessToken } = useAuth();
   const [platform, setPlatform] = useState(platforms[0]);
   const [platformSource, setPlatformSource] = useState({ type: "manual", label: "" });
   const [objective, setObjective] = useState(objectives[0]);
@@ -106,9 +110,10 @@ export default function ComparePage() {
     setError("");
 
     try {
+      const token = await getAccessToken();
       const response = await fetch("/api/analyze", {
         method: "POST",
-        headers: { "content-type": "application/json" },
+        headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
           compare: true,
           platform,
@@ -195,6 +200,10 @@ export default function ComparePage() {
             </label>
           </div>
           <div className="mt-5">
+            <div className="mb-4 grid gap-4 md:grid-cols-2">
+              <AuthCard />
+              <BillingStatus compact />
+            </div>
             <ProductStatus />
           </div>
         </section>
