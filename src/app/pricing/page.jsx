@@ -30,6 +30,7 @@ const plans = [
     features: [
       "150 credits per month",
       "AI image analysis included",
+      "Video audit scorecards",
       "Compare up to 4 ads",
       "Creative recommendations",
       "Saved analysis history",
@@ -46,6 +47,7 @@ const plans = [
     features: [
       "750 credits per month",
       "Everything in Plus",
+      "Advanced video audit workflow",
       "Campaign folders",
       "Brand and audience presets",
       "Exportable reports",

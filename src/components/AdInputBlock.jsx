@@ -12,6 +12,7 @@ export const emptyAdInput = {
   creativeFilename: "",
   creativeType: "none",
   creativePreview: "",
+  videoDuration: 0,
   imageData: "",
   error: "",
 };
@@ -56,6 +57,7 @@ export function apiAdPayload(ad, ad_id) {
     creativeType: ad.creativeType,
     creativeFilename: ad.creativeFilename,
     hasCreativePreview: Boolean(ad.creativePreview),
+    videoDuration: ad.creativeType === "video" ? ad.videoDuration : 0,
     imageData: ad.creativeType === "image" ? ad.imageData : "",
   };
 }
@@ -67,7 +69,7 @@ export default function AdInputBlock({ title, value, onChange }) {
 
   function clearCreative() {
     if (value.creativePreview) URL.revokeObjectURL(value.creativePreview);
-    patch({ creativeFilename: "", creativeType: "none", creativePreview: "", imageData: "", error: "" });
+    patch({ creativeFilename: "", creativeType: "none", creativePreview: "", videoDuration: 0, imageData: "", error: "" });
   }
 
   function handleFile(file) {
@@ -88,12 +90,19 @@ export default function AdInputBlock({ title, value, onChange }) {
 
     if (creativeType === "image") {
       const reader = new FileReader();
-      reader.onload = () => patch({ creativeFilename: file.name, creativeType, creativePreview: preview, imageData: String(reader.result || ""), error: "" });
+      reader.onload = () => patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: 0, imageData: String(reader.result || ""), error: "" });
       reader.readAsDataURL(file);
       return;
     }
 
-    patch({ creativeFilename: file.name, creativeType, creativePreview: preview, imageData: "", error: "" });
+    patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: 0, imageData: "", error: "" });
+  }
+
+  function handleVideoMetadata(event) {
+    const duration = Number(event.currentTarget.duration || 0);
+    if (Number.isFinite(duration) && duration > 0) {
+      patch({ videoDuration: Math.round(duration) });
+    }
   }
 
   function handlePostLinkChange(nextValue) {
@@ -144,7 +153,9 @@ export default function AdInputBlock({ title, value, onChange }) {
               <div>
                 <p className="text-sm font-bold text-white">{value.creativeFilename}</p>
                 <p className="text-xs text-slate-500">
-                  {value.creativeType === "video" ? "Video preview only. Deep video analysis is not available yet." : "Preview only on Free. AI image analysis is included in Plus."}
+                  {value.creativeType === "video"
+                    ? `Video audit ready${value.videoDuration ? ` · ${value.videoDuration}s detected` : ""}. Full AI video processing will require a paid video-capable model.`
+                    : "Preview only on Free. AI image analysis is included in Plus."}
                 </p>
               </div>
               <button type="button" onClick={clearCreative} className="rounded-lg border border-white/10 p-2 text-slate-300 hover:bg-white/10" aria-label="Remove creative">
@@ -154,14 +165,14 @@ export default function AdInputBlock({ title, value, onChange }) {
             {value.creativeType === "image" ? (
               <img src={value.creativePreview} alt="" className="max-h-64 w-full rounded-lg object-contain" />
             ) : (
-              <video src={value.creativePreview} controls className="max-h-64 w-full rounded-lg" />
+              <video src={value.creativePreview} controls onLoadedMetadata={handleVideoMetadata} className="max-h-64 w-full rounded-lg" />
             )}
           </div>
         ) : (
           <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-dashed border-white/15 bg-slate-950 p-4 text-sm text-slate-400 transition hover:border-cyan-300/40">
             <span className="flex items-center gap-3">
               <ImagePlus size={18} />
-              JPG, PNG, WEBP, MP4, MOV, WEBM up to 25MB · Images preview only on Free
+              JPG, PNG, WEBP, MP4, MOV, WEBM up to 25MB · Videos get a dedicated audit scorecard
             </span>
             <span className="rounded-md bg-white/10 px-3 py-1 text-xs font-bold text-slate-300">Choose</span>
             <input type="file" accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" className="hidden" onChange={(event) => handleFile(event.target.files?.[0])} />

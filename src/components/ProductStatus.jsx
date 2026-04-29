@@ -31,8 +31,8 @@ export default function ProductStatus() {
       </p>
       <p className="mt-2 text-sm leading-6 text-slate-400">
         {status.aiConfigured
-          ? "Adnex is connected to AI analysis. Links still provide platform/context only unless scraping is added later."
-          : "You can test the full product flow without paid AI calls. Scores use the built-in demo engine until an API key is connected."}
+          ? "Adnex is connected to AI analysis. Links still provide platform/context only unless scraping is added later, and full video scoring needs the video pipeline to pass frames/transcript."
+          : "You can test the full product flow without paid AI calls. Scores, image reviews, and video audit sections use the built-in demo engine until the AI/video pipeline is connected."}
       </p>
       <p className="mt-2 text-xs leading-5 text-slate-500">
         {status.storageConfigured ? "Cloud storage appears configured." : "Uploads preview locally for now. Saved analyses stay in this browser."}

@@ -29,7 +29,7 @@ export default function Home() {
             Know which ad to run <span className="hero-title__accent">before</span> you spend
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
-            Score copy, creative, and link context in one place. Compare variants, spot weak offers, and decide what deserves budget before launch day.
+            Score copy, image creative, video ads, and link context in one place. Compare variants, spot weak offers, and decide what deserves budget before launch day.
           </p>
           <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
@@ -48,7 +48,7 @@ export default function Home() {
           </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
             <span className="inline-flex items-center gap-2"><ShieldCheck size={15} /> Demo mode ready</span>
-            <span>Copy + creative + links</span>
+            <span>Copy + image + video + links</span>
             <span>Compare up to 4 ads</span>
           </div>
         </div>
@@ -82,7 +82,7 @@ export default function Home() {
           <div className="grid gap-4 sm:grid-cols-3">
             {[
               ["Free", "$0", "5 text/link analyses"],
-              ["Plus", "$15", "Image analysis"],
+              ["Plus", "$15", "Image + video audits"],
               ["Pro", "$39", "750 credits"],
             ].map(([name, price, detail]) => (
               <div key={name} className="depth-card rounded-lg border border-white/10 bg-white/[0.04] p-5">
@@ -129,7 +129,7 @@ export default function Home() {
             </div>
             <div className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-5">
               <CheckCircle2 className="mt-1 text-cyan-300" size={20} />
-              <p className="text-sm leading-6 text-slate-300">Every result includes specific rewrites and CTA improvements.</p>
+              <p className="text-sm leading-6 text-slate-300">Every result includes score reasons, rewrites, CTA improvements, and creative/video fixes.</p>
             </div>
           </div>
         </div>

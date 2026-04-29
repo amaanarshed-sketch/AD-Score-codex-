@@ -1,4 +1,4 @@
-import { AlertTriangle, BadgeCheck, CheckCircle2, Clapperboard, FileText, Lightbulb, Link2, Radar, Sparkles, Target, Trophy } from "lucide-react";
+import { AlertTriangle, BadgeCheck, CheckCircle2, Clapperboard, FileText, Lightbulb, Link2, PlaySquare, Radar, Sparkles, Target, Trophy } from "lucide-react";
 
 const sections = [
   ["platform_fit", "Platform Fit"],
@@ -50,6 +50,53 @@ function ListSection({ title, icon: Icon, items, tone = "cyan" }) {
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+const videoSections = [
+  ["first_three_seconds", "First 3 Seconds"],
+  ["visual_flow", "Visual Flow"],
+  ["on_screen_text", "On-Screen Text"],
+  ["product_clarity", "Product Clarity"],
+  ["cta_timing", "CTA Timing"],
+  ["platform_native_feel", "Platform-Native Feel"],
+];
+
+function VideoAudit({ video }) {
+  if (!video || video.audit_type === "none") return null;
+
+  return (
+    <section className="rounded-lg border border-fuchsia-300/20 bg-fuchsia-300/5 p-4">
+      <h3 className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-fuchsia-200">
+        <PlaySquare size={16} />
+        Video Audit
+      </h3>
+      <p className="text-sm leading-6 text-slate-300">{video.summary}</p>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        {videoSections.map(([key, title]) => {
+          const item = video[key] || { score: 0, max: 1, feedback: "No feedback returned." };
+          const width = Math.max(0, Math.min(100, (Number(item.score || 0) / Number(item.max || 1)) * 100));
+          return (
+            <div key={key} className="rounded-lg border border-white/10 bg-slate-950/60 p-3">
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h4 className="text-sm font-bold text-white">{title}</h4>
+                <span className="text-xs font-black text-fuchsia-200">{item.score}/{item.max}</span>
+              </div>
+              <div className="mb-2 h-1.5 rounded-full bg-slate-800">
+                <div className="h-1.5 rounded-full bg-fuchsia-300 transition-all duration-500" style={{ width: `${width}%` }} />
+              </div>
+              <p className="text-xs leading-5 text-slate-400">{item.feedback}</p>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-4 grid gap-3 md:grid-cols-2">
+        <ListSection title="Retention Risks" icon={AlertTriangle} items={video.retention_risks} tone="rose" />
+        <ListSection title="Scene Fixes" icon={Lightbulb} items={video.scene_recommendations} />
+      </div>
     </section>
   );
 }
@@ -159,6 +206,7 @@ export default function ScoreResult({ result, context, label, recommended = fals
         {!compact ? (
           <>
             <ListSection title="Better Hook Ideas" icon={Sparkles} items={result.hook_rewrites} />
+            <VideoAudit video={result.video_analysis} />
             <ListSection title="Creative Recommendations" icon={Clapperboard} items={result.creative_recommendations} />
           </>
         ) : null}
