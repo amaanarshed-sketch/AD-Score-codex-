@@ -5,7 +5,7 @@ import { LogIn, LogOut, UserPlus } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 
 export default function AuthCard() {
-  const { configured, user, loading, signIn, signOut, signUp } = useAuth();
+  const { configured, user, loading, signIn, signInWithGoogle, signOut, signUp } = useAuth();
   const [mode, setMode] = useState("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -18,8 +18,12 @@ export default function AuthCard() {
     setMessage("");
     try {
       if (mode === "signup") {
-        await signUp(email, password);
-        setMessage("Account created. Check your inbox if email confirmation is enabled.");
+        const data = await signUp(email, password);
+        if (data.session) {
+          setMessage("Account created and signed in.");
+        } else {
+          setMessage("Account created. Check your inbox and confirm your email to finish signing in.");
+        }
       } else {
         await signIn(email, password);
         setMessage("Signed in.");
@@ -27,6 +31,18 @@ export default function AuthCard() {
     } catch (error) {
       setMessage(error.message || "Auth failed.");
     } finally {
+      setBusy(false);
+    }
+  }
+
+  async function googleLogin() {
+    setBusy(true);
+    setMessage("");
+    try {
+      await signInWithGoogle();
+      setMessage("Redirecting to Google...");
+    } catch (error) {
+      setMessage(error.message || "Google login failed.");
       setBusy(false);
     }
   }
@@ -82,6 +98,22 @@ export default function AuthCard() {
             {label}
           </button>
         ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={googleLogin}
+        disabled={busy}
+        className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
+      >
+        <span className="font-black">G</span>
+        Continue with Google
+      </button>
+
+      <div className="mb-4 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
+        <span className="h-px flex-1 bg-white/10" />
+        Email
+        <span className="h-px flex-1 bg-white/10" />
       </div>
 
       <form onSubmit={submit} className="space-y-3">

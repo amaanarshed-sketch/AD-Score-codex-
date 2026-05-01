@@ -31,6 +31,7 @@ export default function AccountPage() {
             <div className="mt-5 grid gap-4">
               {[
                 [KeyRound, "Supabase Auth", "Add Supabase URL, anon key, and service role key to enable accounts."],
+                [KeyRound, "Google login", "Enable Google under Supabase Auth Providers and add your live URL to redirect settings."],
                 [CreditCard, "Lemon Squeezy", "Add store, API, webhook secret, and Plus/Pro variant IDs to open checkout."],
                 [Database, "Credit tables", "Run the included SQL schema in Supabase before using live credits."],
               ].map(([Icon, title, copy]) => (

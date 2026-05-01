@@ -5,6 +5,11 @@ import { getSupabaseBrowserClient, hasSupabaseBrowserConfig } from "../lib/supab
 
 const AuthContext = createContext(null);
 
+function authRedirectUrl() {
+  if (typeof window === "undefined") return undefined;
+  return `${window.location.origin}/account`;
+}
+
 export function AuthProvider({ children }) {
   const supabase = useMemo(() => getSupabaseBrowserClient(), []);
   const [session, setSession] = useState(null);
@@ -40,7 +45,25 @@ export function AuthProvider({ children }) {
 
   async function signUp(email, password) {
     if (!supabase) throw new Error("Supabase is not configured yet.");
-    const { error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: authRedirectUrl(),
+      },
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  async function signInWithGoogle() {
+    if (!supabase) throw new Error("Supabase is not configured yet.");
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: authRedirectUrl(),
+      },
+    });
     if (error) throw error;
   }
 
@@ -63,6 +86,7 @@ export function AuthProvider({ children }) {
         user: session?.user || null,
         loading,
         signIn,
+        signInWithGoogle,
         signUp,
         signOut,
         getAccessToken,
