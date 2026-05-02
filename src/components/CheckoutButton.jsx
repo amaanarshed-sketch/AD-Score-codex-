@@ -45,7 +45,7 @@ export default function CheckoutButton({ plan, children, featured = false }) {
         onClick={checkout}
         disabled={loading}
         className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
-          featured ? "bg-cyan-300 text-slate-950 hover:bg-cyan-200" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
+          featured ? "app-primary-action bg-cyan-300 text-slate-950 hover:bg-cyan-200" : "app-secondary-action border border-white/10 bg-white/5 text-white hover:bg-white/10"
         }`}
       >
         {loading ? <Loader2 className="animate-spin" size={16} /> : null}

@@ -33,8 +33,7 @@ export default function BillingStatus({ compact = false }) {
   const planName = billing?.planName || "Free";
   const remaining = billing?.remainingCredits ?? 5;
   const total = billing?.monthlyCredits ?? 5;
-  const used = Math.max(0, total - remaining);
-  const width = Math.max(0, Math.min(100, (used / Math.max(1, total)) * 100));
+  const remainingWidth = Math.max(0, Math.min(100, (remaining / Math.max(1, total)) * 100));
 
   return (
     <section className={`rounded-xl border border-white/10 bg-white/[0.04] ${compact ? "p-4" : "p-5"}`}>
@@ -59,8 +58,8 @@ export default function BillingStatus({ compact = false }) {
           </span>
           <span>{remaining}/{total} left</span>
         </div>
-        <div className="h-2 rounded-full bg-slate-800">
-          <div className="h-2 rounded-full bg-cyan-300" style={{ width: `${width}%` }} />
+        <div className="credit-meter h-2 rounded-full bg-slate-800" aria-label={`${remaining} of ${total} credits remaining`}>
+          <div className="credit-meter__fill h-2 rounded-full bg-cyan-300" style={{ width: `${remainingWidth}%` }} />
         </div>
       </div>
 

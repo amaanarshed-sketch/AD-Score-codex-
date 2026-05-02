@@ -1,9 +1,12 @@
 "use client";
 
-import { BadgeCheck, ImagePlus, Link2, X } from "lucide-react";
+import { BadgeCheck, FileText, ImagePlus, Link2, UploadCloud, X } from "lucide-react";
 
 const acceptedTypes = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime", "video/webm"];
 const maxBytes = 25 * 1024 * 1024;
+const imageMaxSide = 1280;
+const imageQuality = 0.72;
+const maxVideoFrames = 4;
 
 export const emptyAdInput = {
   adCopy: "",
@@ -14,6 +17,8 @@ export const emptyAdInput = {
   creativePreview: "",
   videoDuration: 0,
   imageData: "",
+  videoFrames: [],
+  videoAnalysisMode: "none",
   error: "",
 };
 
@@ -59,20 +64,110 @@ export function apiAdPayload(ad, ad_id) {
     hasCreativePreview: Boolean(ad.creativePreview),
     videoDuration: ad.creativeType === "video" ? ad.videoDuration : 0,
     imageData: ad.creativeType === "image" ? ad.imageData : "",
+    videoFrames: ad.creativeType === "video" ? ad.videoFrames || [] : [],
+    videoAnalysisMode: ad.creativeType === "video" && ad.videoFrames?.length ? "sampled_frames" : "none",
   };
 }
 
+function canvasToJpeg(canvas) {
+  return canvas.toDataURL("image/jpeg", imageQuality);
+}
+
+function scaledSize(width, height) {
+  const scale = Math.min(1, imageMaxSide / Math.max(width, height));
+  return { width: Math.max(1, Math.round(width * scale)), height: Math.max(1, Math.round(height * scale)) };
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => resolve(image);
+    image.onerror = () => reject(new Error("Unable to read image."));
+    image.src = src;
+  });
+}
+
+async function compressImageFile(file) {
+  const original = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Unable to read image."));
+    reader.readAsDataURL(file);
+  });
+  const image = await loadImage(original);
+  const size = scaledSize(image.naturalWidth || image.width, image.naturalHeight || image.height);
+  const canvas = document.createElement("canvas");
+  canvas.width = size.width;
+  canvas.height = size.height;
+  const context = canvas.getContext("2d");
+  context.drawImage(image, 0, 0, size.width, size.height);
+  return canvasToJpeg(canvas);
+}
+
+function waitForVideoEvent(video, eventName) {
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      video.removeEventListener(eventName, onEvent);
+      video.removeEventListener("error", onError);
+    };
+    const onEvent = () => {
+      cleanup();
+      resolve();
+    };
+    const onError = () => {
+      cleanup();
+      reject(new Error("Unable to read video."));
+    };
+    video.addEventListener(eventName, onEvent, { once: true });
+    video.addEventListener("error", onError, { once: true });
+  });
+}
+
+async function extractVideoFrames(src) {
+  const video = document.createElement("video");
+  video.preload = "metadata";
+  video.muted = true;
+  video.playsInline = true;
+  video.src = src;
+  await waitForVideoEvent(video, "loadedmetadata");
+  const duration = Number(video.duration || 0);
+  const width = video.videoWidth || 720;
+  const height = video.videoHeight || 1280;
+  const size = scaledSize(width, height);
+  const canvas = document.createElement("canvas");
+  canvas.width = size.width;
+  canvas.height = size.height;
+  const context = canvas.getContext("2d");
+  const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 1;
+  const times = [0.08, 0.33, 0.66, 0.92].slice(0, maxVideoFrames).map((ratio) => Math.min(Math.max(0, safeDuration * ratio), Math.max(0, safeDuration - 0.05)));
+  const frames = [];
+
+  for (const time of times) {
+    video.currentTime = time;
+    await waitForVideoEvent(video, "seeked");
+    context.drawImage(video, 0, 0, size.width, size.height);
+    frames.push(canvasToJpeg(canvas));
+  }
+
+  return { frames, duration: Number.isFinite(duration) ? Math.round(duration) : 0 };
+}
+
 export default function AdInputBlock({ title, value, onChange }) {
+  const copyLength = value.adCopy.trim().length;
+  const hasCopy = copyLength > 0;
+  const hasLink = value.postLink.trim().length > 0;
+  const hasCreative = value.creativeType !== "none";
+
   function patch(next) {
     onChange({ ...value, ...next });
   }
 
   function clearCreative() {
     if (value.creativePreview) URL.revokeObjectURL(value.creativePreview);
-    patch({ creativeFilename: "", creativeType: "none", creativePreview: "", videoDuration: 0, imageData: "", error: "" });
+    patch({ creativeFilename: "", creativeType: "none", creativePreview: "", videoDuration: 0, imageData: "", videoFrames: [], videoAnalysisMode: "none", error: "" });
   }
 
-  function handleFile(file) {
+  async function handleFile(file) {
     if (!file) return;
     if (!acceptedTypes.includes(file.type)) {
       patch({ error: "Unsupported file type. Use JPG, PNG, WEBP, MP4, MOV, or WEBM." });
@@ -88,20 +183,24 @@ export default function AdInputBlock({ title, value, onChange }) {
     const preview = URL.createObjectURL(file);
     // TODO: Replace local object URLs with Supabase Storage URLs once storage is configured.
 
-    if (creativeType === "image") {
-      const reader = new FileReader();
-      reader.onload = () => patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: 0, imageData: String(reader.result || ""), error: "" });
-      reader.readAsDataURL(file);
-      return;
-    }
+    try {
+      if (creativeType === "image") {
+        const imageData = await compressImageFile(file);
+        patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: 0, imageData, videoFrames: [], videoAnalysisMode: "none", error: "" });
+        return;
+      }
 
-    patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: 0, imageData: "", error: "" });
+      const { frames, duration } = await extractVideoFrames(preview);
+      patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: duration, imageData: "", videoFrames: frames, videoAnalysisMode: frames.length ? "sampled_frames" : "none", error: "" });
+    } catch {
+      patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: 0, imageData: "", videoFrames: [], videoAnalysisMode: "none", error: "Preview loaded, but compression/frame extraction failed. You can still submit with limited creative context." });
+    }
   }
 
   function handleVideoMetadata(event) {
     const duration = Number(event.currentTarget.duration || 0);
     if (Number.isFinite(duration) && duration > 0) {
-      patch({ videoDuration: Math.round(duration) });
+      patch({ videoDuration: Math.round(duration), videoAnalysisMode: value.videoFrames?.length ? "sampled_frames" : value.videoAnalysisMode });
     }
   }
 
@@ -111,28 +210,41 @@ export default function AdInputBlock({ title, value, onChange }) {
   }
 
   return (
-    <section className="rounded-xl border border-white/10 bg-white/[0.035] p-4">
-      <h2 className="mb-4 text-sm font-black uppercase tracking-[0.16em] text-slate-400">{title}</h2>
+    <section className="app-card workbench-card rounded-2xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
+      <div className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <p className="app-eyebrow text-sm font-black uppercase tracking-[0.16em] text-slate-400">{title}</p>
+          <h2 className="app-title mt-2 text-xl font-black tracking-tight text-white">Build the ad brief</h2>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <span className={`app-status-pill rounded-full border px-3 py-1 text-xs font-black ${hasCopy ? "is-active border-white/20 bg-white text-black" : "border-white/10 bg-white/5 text-slate-400"}`}>Copy</span>
+          <span className={`app-status-pill rounded-full border px-3 py-1 text-xs font-black ${hasCreative ? "is-active border-white/20 bg-white text-black" : "border-white/10 bg-white/5 text-slate-400"}`}>Creative</span>
+          <span className={`app-status-pill rounded-full border px-3 py-1 text-xs font-black ${hasLink ? "is-active border-white/20 bg-white text-black" : "border-white/10 bg-white/5 text-slate-400"}`}>Link</span>
+        </div>
+      </div>
 
-      <label className="mb-4 block">
-        <span className="mb-2 block text-sm font-bold text-slate-200">Ad Copy</span>
+      <label className="app-input-panel input-panel mb-4 block rounded-2xl border border-white/10 bg-black/20 p-4 transition focus-within:border-white/20 focus-within:bg-white/[0.045]">
+        <span className="app-label mb-2 flex items-center justify-between gap-3 text-sm font-bold text-slate-200">
+          <span className="inline-flex items-center gap-2"><FileText size={15} /> Ad Copy</span>
+          <span className="app-muted text-xs font-bold text-slate-500">{copyLength} chars</span>
+        </span>
         <textarea
           value={value.adCopy}
           onChange={(event) => patch({ adCopy: event.target.value, error: "" })}
-          placeholder="Paste your ad copy..."
-          className="min-h-40 w-full resize-y rounded-lg border border-white/10 bg-slate-950 p-4 text-sm leading-6 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-300/60"
+          placeholder="Paste the exact ad copy your audience will see. Hooks, body copy, offer, CTA..."
+          className="app-control min-h-40 w-full resize-y rounded-xl border p-4 text-sm leading-6 outline-none transition"
         />
       </label>
 
-      <label className="mb-4 block">
-        <span className="mb-2 block text-sm font-bold text-slate-200">Ad Post Link</span>
+      <label className="app-input-panel input-panel mb-4 block rounded-2xl border border-white/10 bg-black/20 p-4 transition focus-within:border-white/20 focus-within:bg-white/[0.045]">
+        <span className="app-label mb-2 flex items-center gap-2 text-sm font-bold text-slate-200"><Link2 size={15} /> Ad Post Link</span>
         <div className="relative">
-          <Link2 className="absolute left-3 top-3.5 text-slate-500" size={16} />
+          <Link2 className="app-muted absolute left-3 top-3.5 text-slate-500" size={16} />
           <input
             value={value.postLink}
             onChange={(event) => handlePostLinkChange(event.target.value)}
             placeholder="Paste Facebook, Instagram, TikTok, LinkedIn, or Google ad link"
-            className="w-full rounded-lg border border-white/10 bg-slate-950 py-3 pl-10 pr-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-300/60"
+            className="app-control w-full rounded-xl border py-3 pl-10 pr-3 text-sm outline-none transition"
           />
         </div>
         {value.detectedPlatform ? (
@@ -145,16 +257,16 @@ export default function AdInputBlock({ title, value, onChange }) {
         ) : null}
       </label>
 
-      <div>
-        <span className="mb-2 block text-sm font-bold text-slate-200">Ad Creative Upload</span>
+      <div className="app-input-panel input-panel rounded-2xl border border-white/10 bg-black/20 p-4">
+        <span className="app-label mb-2 flex items-center gap-2 text-sm font-bold text-slate-200"><ImagePlus size={15} /> Ad Creative Upload</span>
         {value.creativePreview ? (
-          <div className="rounded-lg border border-white/10 bg-slate-950 p-3">
+          <div className="rounded-xl border border-white/10 bg-slate-950/80 p-3">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <p className="text-sm font-bold text-white">{value.creativeFilename}</p>
-                <p className="text-xs text-slate-500">
+                <p className="app-title text-sm font-bold text-white">{value.creativeFilename}</p>
+                <p className="app-muted text-xs text-slate-500">
                   {value.creativeType === "video"
-                    ? `Video audit ready${value.videoDuration ? ` · ${value.videoDuration}s detected` : ""}. Full AI video processing will require a paid video-capable model.`
+                    ? `Video preview ready${value.videoDuration ? ` · ${value.videoDuration}s detected` : ""}${value.videoFrames?.length ? ` · ${value.videoFrames.length} sampled frames for AI audit` : ""}.`
                     : "Preview only on Free. AI image analysis is included in Plus."}
                 </p>
               </div>
@@ -163,18 +275,19 @@ export default function AdInputBlock({ title, value, onChange }) {
               </button>
             </div>
             {value.creativeType === "image" ? (
-              <img src={value.creativePreview} alt="" className="max-h-64 w-full rounded-lg object-contain" />
+              <img src={value.creativePreview} alt="" className="max-h-72 w-full rounded-lg object-contain" />
             ) : (
-              <video src={value.creativePreview} controls onLoadedMetadata={handleVideoMetadata} className="max-h-64 w-full rounded-lg" />
+              <video src={value.creativePreview} controls onLoadedMetadata={handleVideoMetadata} className="max-h-72 w-full rounded-lg" />
             )}
           </div>
         ) : (
-          <label className="flex cursor-pointer items-center justify-between gap-4 rounded-lg border border-dashed border-white/15 bg-slate-950 p-4 text-sm text-slate-400 transition hover:border-cyan-300/40">
-            <span className="flex items-center gap-3">
-              <ImagePlus size={18} />
-              JPG, PNG, WEBP, MP4, MOV, WEBM up to 25MB · Videos get a dedicated audit scorecard
+          <label className="app-upload upload-dropzone flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/15 bg-slate-950/80 p-5 text-center text-sm text-slate-400 transition hover:border-white/25 hover:bg-white/[0.035]">
+            <span className="app-icon-box flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
+              <UploadCloud size={22} />
             </span>
-            <span className="rounded-md bg-white/10 px-3 py-1 text-xs font-bold text-slate-300">Choose</span>
+            <span className="app-label font-bold text-slate-200">Drop in an image or video creative</span>
+            <span className="app-muted max-w-md text-xs leading-5 text-slate-500">JPG, PNG, WEBP, MP4, MOV, WEBM up to 25MB. Free keeps creative as preview.</span>
+            <span className="app-upload-button rounded-full bg-white px-4 py-2 text-xs font-black text-black">Choose creative</span>
             <input type="file" accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" className="hidden" onChange={(event) => handleFile(event.target.files?.[0])} />
           </label>
         )}

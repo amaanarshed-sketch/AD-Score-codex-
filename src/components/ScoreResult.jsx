@@ -11,16 +11,30 @@ const sections = [
   ["cta", "CTA"],
 ];
 
-function scoreColor(score) {
-  if (score >= 78) return "text-emerald-300";
-  if (score >= 55) return "text-amber-300";
-  return "text-rose-300";
+const videoSections = [
+  ["first_three_seconds", "First 3 Seconds"],
+  ["visual_flow", "Visual Flow"],
+  ["on_screen_text", "On-Screen Text"],
+  ["product_clarity", "Product Clarity"],
+  ["cta_timing", "CTA Timing"],
+  ["platform_native_feel", "Platform-Native Feel"],
+];
+
+function verdictFromScore(score = 0) {
+  if (score >= 80) return "run";
+  if (score >= 60) return "revise";
+  return "reject";
 }
 
-function pillStyle(value) {
-  if (value === "Run" || value === "High") return "border-emerald-300/30 bg-emerald-300/10 text-emerald-200";
-  if (value === "Revise" || value === "Medium") return "border-amber-300/30 bg-amber-300/10 text-amber-200";
-  return "border-rose-300/30 bg-rose-300/10 text-rose-200";
+function verdictFromAction(action = "") {
+  const normalized = action.toLowerCase();
+  if (normalized.includes("run")) return "run";
+  if (normalized.includes("reject")) return "reject";
+  return "revise";
+}
+
+function titleCase(value = "") {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : "";
 }
 
 function inputBadges(summary = {}) {
@@ -32,21 +46,97 @@ function inputBadges(summary = {}) {
   ].filter(([enabled]) => enabled);
 }
 
-function ListSection({ title, icon: Icon, items, tone = "cyan" }) {
-  if (!items?.length) return null;
-  const toneClass = tone === "rose" ? "border-rose-300/20 bg-rose-300/5 text-rose-200" : tone === "emerald" ? "border-emerald-300/20 bg-emerald-300/5 text-emerald-200" : "border-cyan-300/20 bg-cyan-300/5 text-cyan-200";
+export function VerdictBadge({ verdict, children }) {
+  const tone = verdictFromAction(verdict || children);
+  return <span className={`verdict-badge verdict-badge--${tone}`}>{children || titleCase(tone)}</span>;
+}
+
+function ConfidenceBadge({ confidence = "Low" }) {
+  const tone = confidence === "High" ? "run" : confidence === "Medium" ? "revise" : "reject";
+  return <span className={`verdict-badge verdict-badge--${tone}`}>Confidence: {confidence}</span>;
+}
+
+function ScoreSummaryCard({ result, context, label, recommended }) {
+  const score = Number(result.overall_score || 0);
+  const tone = verdictFromAction(result.recommended_action || verdictFromScore(score));
 
   return (
-    <section className={`rounded-lg border p-4 ${toneClass}`}>
-      <h3 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em]">
+    <section className={`score-summary score-summary--${tone}`}>
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          {label ? <p className="ui-eyebrow">{label}</p> : null}
+          <div className="mt-2 flex items-end gap-2">
+            <span className="score-summary__number">{score}</span>
+            <span className="score-summary__max">/100</span>
+          </div>
+          <p className="score-summary__verdict">{result.final_verdict || "Revise before running."}</p>
+        </div>
+
+        <div className="flex flex-wrap gap-2 sm:justify-end">
+          <ConfidenceBadge confidence={result.confidence || "Low"} />
+          <VerdictBadge verdict={result.recommended_action}>{result.recommended_action || "Revise"}</VerdictBadge>
+          {recommended ? (
+            <span className="verdict-badge verdict-badge--run inline-flex items-center gap-2">
+              <Trophy size={14} />
+              Recommended to Run
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      {context ? (
+        <div className="score-summary__context">
+          <div>
+            <span>Platform</span>
+            <strong>{context.platform}</strong>
+          </div>
+          <div>
+            <span>Objective</span>
+            <strong>{context.objective}</strong>
+          </div>
+          <div>
+            <span>Target audience</span>
+            <strong>{context.audience || "Not provided"}</strong>
+          </div>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function BreakdownRow({ title, item }) {
+  const score = Number(item?.score || 0);
+  const max = Number(item?.max || 1);
+  const percent = Math.max(0, Math.min(100, (score / max) * 100));
+  const tone = verdictFromScore(percent);
+
+  return (
+    <section className="breakdown-row">
+      <div className="breakdown-row__top">
+        <h4>{title}</h4>
+        <span>{score}/{max}</span>
+      </div>
+      <div className="breakdown-row__track">
+        <div className={`breakdown-row__fill breakdown-row__fill--${tone}`} style={{ width: `${percent}%` }} />
+      </div>
+      <p>{item?.feedback || "No feedback returned."}</p>
+    </section>
+  );
+}
+
+function ListSection({ title, icon: Icon, items, tone = "neutral" }) {
+  if (!items?.length) return null;
+  return (
+    <section className={`ui-card list-section list-section--${tone}`}>
+      <h3 className="ui-section-title">
         <Icon size={16} />
         {title}
       </h3>
       <ul className="space-y-2">
         {items.map((item) => (
-          <li key={item} className="flex gap-2 text-sm leading-6 text-slate-300">
-            <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-current" />
-            <span>{item}</span>
+          <li key={item} className="list-section__item">
+            <span />
+            <p>{item}</p>
           </li>
         ))}
       </ul>
@@ -54,47 +144,25 @@ function ListSection({ title, icon: Icon, items, tone = "cyan" }) {
   );
 }
 
-const videoSections = [
-  ["first_three_seconds", "First 3 Seconds"],
-  ["visual_flow", "Visual Flow"],
-  ["on_screen_text", "On-Screen Text"],
-  ["product_clarity", "Product Clarity"],
-  ["cta_timing", "CTA Timing"],
-  ["platform_native_feel", "Platform-Native Feel"],
-];
-
 function VideoAudit({ video }) {
   if (!video || video.audit_type === "none") return null;
 
   return (
-    <section className="rounded-lg border border-fuchsia-300/20 bg-fuchsia-300/5 p-4">
-      <h3 className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-fuchsia-200">
+    <section className="ui-card">
+      <h3 className="ui-section-title">
         <PlaySquare size={16} />
         Video Audit
       </h3>
-      <p className="text-sm leading-6 text-slate-300">{video.summary}</p>
+      <p className="ui-muted mt-2 text-sm leading-6">{video.summary}</p>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        {videoSections.map(([key, title]) => {
-          const item = video[key] || { score: 0, max: 1, feedback: "No feedback returned." };
-          const width = Math.max(0, Math.min(100, (Number(item.score || 0) / Number(item.max || 1)) * 100));
-          return (
-            <div key={key} className="rounded-lg border border-white/10 bg-slate-950/60 p-3">
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <h4 className="text-sm font-bold text-white">{title}</h4>
-                <span className="text-xs font-black text-fuchsia-200">{item.score}/{item.max}</span>
-              </div>
-              <div className="mb-2 h-1.5 rounded-full bg-slate-800">
-                <div className="h-1.5 rounded-full bg-fuchsia-300 transition-all duration-500" style={{ width: `${width}%` }} />
-              </div>
-              <p className="text-xs leading-5 text-slate-400">{item.feedback}</p>
-            </div>
-          );
-        })}
+        {videoSections.map(([key, title]) => (
+          <BreakdownRow key={key} title={title} item={video[key] || { score: 0, max: 1, feedback: "No feedback returned." }} />
+        ))}
       </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <ListSection title="Retention Risks" icon={AlertTriangle} items={video.retention_risks} tone="rose" />
+        <ListSection title="Retention Risks" icon={AlertTriangle} items={video.retention_risks} tone="reject" />
         <ListSection title="Scene Fixes" icon={Lightbulb} items={video.scene_recommendations} />
       </div>
     </section>
@@ -103,58 +171,16 @@ function VideoAudit({ video }) {
 
 export default function ScoreResult({ result, context, label, recommended = false, compact = false }) {
   if (!result) return null;
-
   const badges = inputBadges(result.input_summary);
 
   return (
-    <article className={`rounded-xl border bg-slate-950 p-5 ${recommended ? "border-emerald-300/50 shadow-lg shadow-emerald-950/20" : "border-white/10"}`}>
-      <section className="mb-5 rounded-lg border border-white/10 bg-white/[0.03] p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            {label ? <p className="text-sm font-bold uppercase tracking-[0.16em] text-slate-500">{label}</p> : null}
-            <div className="mt-2 flex items-end gap-2">
-              <span className={`text-6xl font-black leading-none ${scoreColor(result.overall_score)}`}>{result.overall_score}</span>
-              <span className="pb-2 text-sm font-semibold text-slate-500">/100</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <div className={`rounded-full border px-3 py-1 text-xs font-black ${pillStyle(result.confidence)}`}>
-              Confidence: {result.confidence || "Low"}
-            </div>
-            <div className={`rounded-full border px-3 py-1 text-xs font-black ${pillStyle(result.recommended_action)}`}>
-              {result.recommended_action || "Revise"}
-            </div>
-            {recommended ? (
-              <div className="inline-flex items-center gap-2 rounded-full bg-emerald-400/10 px-3 py-1 text-xs font-bold text-emerald-300">
-                <Trophy size={14} />
-                Recommended to Run
-              </div>
-            ) : null}
-          </div>
-        </div>
-
-        {context ? (
-          <div className="mt-5 grid gap-3 text-sm md:grid-cols-3">
-            <div>
-              <span className="block text-slate-500">Platform</span>
-              <strong className="text-slate-200">{context.platform}</strong>
-            </div>
-            <div>
-              <span className="block text-slate-500">Objective</span>
-              <strong className="text-slate-200">{context.objective}</strong>
-            </div>
-            <div>
-              <span className="block text-slate-500">Target audience</span>
-              <strong className="text-slate-200">{context.audience || "Not provided"}</strong>
-            </div>
-          </div>
-        ) : null}
-      </section>
+    <article className="score-result">
+      <ScoreSummaryCard result={result} context={context} label={label} recommended={recommended} />
 
       {badges.length ? (
-        <section className="mb-5 flex flex-wrap gap-2">
+        <section className="input-summary">
           {badges.map(([, title, Icon]) => (
-            <span key={title} className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-bold text-slate-300">
+            <span key={title} className="input-summary__badge">
               <Icon size={13} />
               {title}
             </span>
@@ -162,65 +188,49 @@ export default function ScoreResult({ result, context, label, recommended = fals
         </section>
       ) : null}
 
-      <div className="grid gap-4">
-        <section className="rounded-lg border border-cyan-300/20 bg-cyan-300/5 p-4">
-          <h3 className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-cyan-200">
-            <Radar size={16} />
-            Detected Ad Angle
-          </h3>
-          <p className="font-bold text-white">{result.detected_angle?.angle || "Other"}</p>
-          <p className="mt-2 text-sm leading-6 text-slate-400">{result.detected_angle?.explanation || "The ad angle is not strongly defined yet."}</p>
-        </section>
+      <section className="ui-card">
+        <h3 className="ui-section-title">
+          <Radar size={16} />
+          Detected Ad Angle
+        </h3>
+        <p className="mt-2 font-bold text-[color:var(--text-primary)]">{result.detected_angle?.angle || "Other"}</p>
+        <p className="ui-muted mt-2 text-sm leading-6">{result.detected_angle?.explanation || "The ad angle is not strongly defined yet."}</p>
+      </section>
 
-        <section>
-          <h3 className="mb-3 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-slate-400">
-            <Target size={16} />
-            Score Breakdown
-          </h3>
-          <div className="grid gap-3">
-            {sections.map(([key, title]) => {
-              const item = result.scores?.[key] || { score: 0, max: 1, feedback: "No feedback returned." };
-              const width = Math.max(0, Math.min(100, (Number(item.score || 0) / Number(item.max || 1)) * 100));
+      <section className="ui-card">
+        <h3 className="ui-section-title">
+          <Target size={16} />
+          Score Breakdown
+        </h3>
+        <div className="mt-4 grid gap-3">
+          {sections.map(([key, title]) => (
+            <BreakdownRow key={key} title={title} item={result.scores?.[key] || { score: 0, max: 1, feedback: "No feedback returned." }} />
+          ))}
+        </div>
+      </section>
 
-              return (
-                <section key={key} className="rounded-lg border border-white/10 bg-white/[0.03] p-4">
-                  <div className="mb-3 flex items-center justify-between gap-4">
-                    <h4 className="font-bold text-white">{title}</h4>
-                    <span className="text-sm font-bold text-cyan-300">
-                      {item.score}/{item.max}
-                    </span>
-                  </div>
-                  <div className="mb-3 h-2 rounded-full bg-slate-800">
-                    <div className="h-2 rounded-full bg-cyan-300 transition-all duration-500" style={{ width: `${width}%` }} />
-                  </div>
-                  <p className="text-sm leading-6 text-slate-400">{item.feedback}</p>
-                </section>
-              );
-            })}
-          </div>
-        </section>
-
-        <ListSection title="Critical Issues" icon={AlertTriangle} items={result.critical_issues} tone="rose" />
-        <ListSection title="Key Strengths" icon={BadgeCheck} items={result.key_strengths} tone="emerald" />
-
-        {!compact ? (
-          <>
-            <ListSection title="Better Hook Ideas" icon={Sparkles} items={result.hook_rewrites} />
-            <VideoAudit video={result.video_analysis} />
-            <ListSection title="Creative Recommendations" icon={Clapperboard} items={result.creative_recommendations} />
-          </>
-        ) : null}
-
-        <ListSection title="Recommendations" icon={Lightbulb} items={result.improvements} />
-
-        <section className="rounded-lg border border-white/10 bg-white/[0.04] p-4">
-          <h3 className="mb-2 flex items-center gap-2 text-sm font-black uppercase tracking-[0.16em] text-slate-400">
-            <CheckCircle2 size={16} />
-            Final Verdict
-          </h3>
-          <p className="text-sm font-semibold leading-6 text-slate-200">{result.final_verdict || "Revise before running."}</p>
-        </section>
+      <div className="grid gap-4 md:grid-cols-2">
+        <ListSection title="Critical Issues" icon={AlertTriangle} items={result.critical_issues} tone="reject" />
+        <ListSection title="Key Strengths" icon={BadgeCheck} items={result.key_strengths} tone="run" />
       </div>
+
+      {!compact ? (
+        <>
+          <ListSection title="Better Hook Ideas" icon={Sparkles} items={result.hook_rewrites} />
+          <VideoAudit video={result.video_analysis} />
+          <ListSection title="Creative Recommendations" icon={Clapperboard} items={result.creative_recommendations} />
+        </>
+      ) : null}
+
+      <ListSection title="Recommendations" icon={Lightbulb} items={result.improvements} />
+
+      <section className="ui-card">
+        <h3 className="ui-section-title">
+          <CheckCircle2 size={16} />
+          Final Verdict
+        </h3>
+        <p className="mt-2 text-sm font-semibold leading-6 text-[color:var(--text-secondary)]">{result.final_verdict || "Revise before running."}</p>
+      </section>
     </article>
   );
 }

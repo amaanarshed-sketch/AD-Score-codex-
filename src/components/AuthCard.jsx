@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { LogIn, LogOut, UserPlus } from "lucide-react";
+import { CheckCircle2, LogIn, LogOut, UserPlus } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 
 export default function AuthCard() {
@@ -63,14 +63,31 @@ export default function AuthCard() {
   }
 
   if (user) {
+    const metadata = user.user_metadata || {};
+    const avatarUrl = metadata.avatar_url || metadata.picture || "";
+    const displayName = metadata.full_name || metadata.name || user.email?.split("@")[0] || "Adnex user";
+    const initial = displayName.charAt(0).toUpperCase();
+
     return (
       <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
         <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-400">Account</h2>
-        <p className="mt-3 break-all text-sm font-bold text-white">{user.email}</p>
+        <div className="mt-4 flex items-center gap-4 rounded-xl border border-white/10 bg-slate-950/70 p-4">
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-white text-xl font-black text-slate-950">
+            {avatarUrl ? <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : initial}
+          </span>
+          <div className="min-w-0">
+            <p className="truncate text-base font-black text-white">{displayName}</p>
+            <p className="mt-1 break-all text-sm text-slate-400">{user.email}</p>
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-xs font-black text-emerald-200">
+              <CheckCircle2 size={13} />
+              Signed in
+            </p>
+          </div>
+        </div>
         <button
           type="button"
           onClick={signOut}
-          className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
         >
           <LogOut size={16} />
           Sign out
@@ -124,7 +141,7 @@ export default function AuthCard() {
             required
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm text-white outline-none transition focus:border-cyan-300/60"
+            className="app-control w-full rounded-lg border p-3 text-sm outline-none transition"
           />
         </label>
         <label className="block">
@@ -135,7 +152,7 @@ export default function AuthCard() {
             minLength={6}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm text-white outline-none transition focus:border-cyan-300/60"
+            className="app-control w-full rounded-lg border p-3 text-sm outline-none transition"
           />
         </label>
         <button

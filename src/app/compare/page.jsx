@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowLeft, BadgeCheck, GitCompareArrows, Loader2, Plus, Sparkles, Trash2, Trophy } from "lucide-react";
+import { ArrowLeft, BadgeCheck, Loader2, Plus, Trash2, Trophy } from "lucide-react";
 import AuthCard from "../../components/AuthCard";
 import BillingStatus from "../../components/BillingStatus";
 import { useAuth } from "../../components/AuthProvider";
@@ -144,7 +144,7 @@ export default function ComparePage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="app-page min-h-screen bg-slate-950 text-white">
       <Navbar />
 
       <section className="mx-auto w-full max-w-6xl px-6 py-10">
@@ -176,7 +176,7 @@ export default function ComparePage() {
           <div className="grid gap-4 lg:grid-cols-3">
             <label className="block">
               <span className="mb-2 block text-sm font-bold text-slate-200">Platform</span>
-              <select value={platform} onChange={(event) => handlePlatformChange(event.target.value)} className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm text-white outline-none transition focus:border-cyan-300/60">
+              <select value={platform} onChange={(event) => handlePlatformChange(event.target.value)} className="app-control w-full rounded-lg border p-3 text-sm outline-none transition">
                 {platforms.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
               {platformSource.type === "link" ? (
@@ -190,13 +190,13 @@ export default function ComparePage() {
             </label>
             <label className="block">
               <span className="mb-2 block text-sm font-bold text-slate-200">Ad Objective</span>
-              <select value={objective} onChange={(event) => setObjective(event.target.value)} className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm text-white outline-none transition focus:border-cyan-300/60">
+              <select value={objective} onChange={(event) => setObjective(event.target.value)} className="app-control w-full rounded-lg border p-3 text-sm outline-none transition">
                 {objectives.map((item) => <option key={item} value={item}>{item}</option>)}
               </select>
             </label>
             <label className="block">
               <span className="mb-2 block text-sm font-bold text-slate-200">Target Audience</span>
-              <input value={audience} onChange={(event) => setAudience(event.target.value)} placeholder="Example: small business owners in Sri Lanka, gym beginners..." className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-300/60" />
+              <input value={audience} onChange={(event) => setAudience(event.target.value)} placeholder="Example: small business owners in Sri Lanka, gym beginners..." className="app-control w-full rounded-lg border p-3 text-sm outline-none transition" />
             </label>
           </div>
           <div className="mt-5">
@@ -227,11 +227,10 @@ export default function ComparePage() {
           type="button"
           onClick={compareAds}
           disabled={loading}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-45"
+          className="app-primary-action app-floating-action mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-cyan-300 px-6 py-4 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-45"
         >
-          {loading ? <Loader2 className="animate-spin" size={17} /> : <Sparkles size={17} />}
+          {loading ? <Loader2 className="animate-spin" size={17} /> : null}
           {loading ? "Comparing..." : "Compare Ads"}
-          {!loading ? <GitCompareArrows size={17} /> : null}
         </button>
 
         {result ? (

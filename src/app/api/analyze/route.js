@@ -1,5 +1,85 @@
 import { NextResponse } from "next/server";
-import { authorizeAnalysisRequest, recordUsage } from "../../../lib/billingServer";
+import { authorizeAnalysisRequest, refundUsage, reserveUsage } from "../../../lib/billingServer";
+
+const AD_DECISION_SYSTEM_PROMPT = `You are an AI ad performance evaluation engine.
+
+You analyze ads and return structured, concise, and actionable outputs.
+
+You are NOT a chatbot. Do not explain. Do not add extra text.
+
+CRITICAL RULES:
+
+1. OUTPUT FORMAT
+- Always return valid JSON only
+- No markdown
+- No extra text before or after JSON
+- Must match required schema exactly
+
+2. LENGTH CONTROL
+- Keep all responses extremely concise
+- Each feedback field: max 1–2 sentences
+- Avoid repetition
+- Avoid filler language
+
+3. STYLE
+- Direct, analytical, and specific
+- Do NOT use generic phrases like:
+  'this is engaging', 'this looks good', 'this could be improved'
+- Always explain what is wrong and why
+
+4. SCORING
+- Be strict and realistic
+- Do not inflate scores
+- Base scoring on real marketing performance principles
+
+5. PRIORITY
+Focus only on:
+- conversion potential
+- clarity
+- strength of hook
+- effectiveness of offer
+- CTA quality
+
+Ignore branding fluff.
+
+6. VIDEO HANDLING
+If video frames are provided:
+- Analyze only visible frames
+- Do NOT assume audio or full video context
+- Briefly mention limitation if needed
+
+7. IMPROVEMENTS
+- Provide 3–5 improvements
+- Each under 12 words
+- Must be actionable
+
+8. HOOK REWRITES
+- Provide exactly 3 rewritten hooks
+- Keep them short, direct, and scroll-stopping
+
+9. DECISION OUTPUT
+Always include a clear decision:
+- 'Run'
+- 'Revise'
+- 'Reject'
+
+10. TOKEN EFFICIENCY
+- Use minimal words
+- Avoid repeating ideas
+- Avoid long explanations
+
+Your goal:
+Deliver maximum decision value with minimal tokens.`;
+
+const SINGLE_OUTPUT_TOKENS = 500;
+const COMPARE_OUTPUT_TOKENS = 600;
+const TEXT_LIMIT = 1500;
+const CONTEXT_LIMIT = 300;
+const LINK_LIMIT = 500;
+const MAX_VIDEO_FRAMES = 4;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 20;
+const rateBuckets = new Map();
 
 const SCORE_MAX = {
   platform_fit: 15,
@@ -17,26 +97,32 @@ const angles = ["Problem-solution", "Social proof", "Offer-driven", "Curiosity",
 const actions = ["Run", "Revise", "Reject"];
 const confidenceLevels = ["Low", "Medium", "High"];
 
+function compactText(value = "", limit = TEXT_LIMIT) {
+  return String(value || "").replace(/\s+/g, " ").trim().slice(0, limit);
+}
+
 function cleanAd(input = {}, index = 0) {
   const creativeType = ["image", "video"].includes(input.creativeType) ? input.creativeType : "none";
   return {
     ad_id: input.ad_id || String.fromCharCode(65 + index),
-    adCopy: String(input.adCopy || "").trim(),
-    postLink: String(input.postLink || "").trim(),
-    detectedPlatform: String(input.detectedPlatform || "").trim(),
+    adCopy: compactText(input.adCopy, TEXT_LIMIT),
+    postLink: compactText(input.postLink, LINK_LIMIT),
+    detectedPlatform: compactText(input.detectedPlatform, CONTEXT_LIMIT),
     creativeType,
-    creativeFilename: String(input.creativeFilename || "").trim(),
+    creativeFilename: compactText(input.creativeFilename, CONTEXT_LIMIT),
     hasCreativePreview: Boolean(input.hasCreativePreview),
     videoDuration: Math.max(0, Math.round(Number(input.videoDuration || 0))),
     imageData: creativeType === "image" ? String(input.imageData || "") : "",
+    videoFrames: creativeType === "video" && Array.isArray(input.videoFrames) ? input.videoFrames.filter((frame) => String(frame).startsWith("data:image/")).slice(0, MAX_VIDEO_FRAMES) : [],
+    videoAnalysisMode: input.videoAnalysisMode === "sampled_frames" ? "sampled_frames" : "none",
   };
 }
 
 function cleanContext(input = {}) {
   return {
-    platform: String(input.platform || "Meta / Facebook / Instagram").trim(),
-    objective: String(input.objective || "Conversions").trim(),
-    audience: String(input.audience || "").trim(),
+    platform: compactText(input.platform || "Meta / Facebook / Instagram", CONTEXT_LIMIT),
+    objective: compactText(input.objective || "Conversions", CONTEXT_LIMIT),
+    audience: compactText(input.audience, CONTEXT_LIMIT),
   };
 }
 
@@ -45,131 +131,31 @@ function hasInput(ad) {
 }
 
 function creativeLine(ad) {
-  if (ad.creativeType === "video") return `Video creative uploaded: ${ad.creativeFilename || "unnamed file"}. Duration detected: ${ad.videoDuration || "unknown"} seconds. Evaluate it as a paid video audit with hook timing, visual clarity, product visibility, on-screen text, pacing, and CTA timing.`;
+  if (ad.creativeType === "video") return `Video: ${ad.creativeFilename || "unnamed"}, ${ad.videoDuration || "unknown"}s, ${ad.videoFrames.length} sampled frames. Analyze visible frames only; no audio/full-video assumptions.`;
   if (ad.creativeType === "image") return `Image creative uploaded: ${ad.creativeFilename || "unnamed file"}. Creative preview exists: ${ad.hasCreativePreview ? "yes" : "no"}.`;
   return "No creative uploaded.";
 }
 
 function buildSinglePrompt(context, ad) {
-  return `Analyze this ad as a structured ad decision tool, not a generic chatbot.
-
-Context:
-- Platform: ${context.platform}
-- Ad objective: ${context.objective}
-- Target audience: ${context.audience || "Not provided"}
-- Ad copy: ${ad.adCopy || "Not provided"}
-- Ad post link: ${ad.postLink || "Not provided"}
-- Platform detected from link: ${ad.detectedPlatform || "Not detected"}
-- Creative type: ${ad.creativeType}
-- Creative filename: ${ad.creativeFilename || "none"}
-- Video duration: ${ad.videoDuration || "none"}
-- Creative preview exists: ${ad.hasCreativePreview ? "yes" : "no"}
-- Creative analysis requirement: ${ad.creativeType === "video" ? "Return a real video audit structure. Judge first 3 seconds, pacing, scene flow, on-screen text, product visibility, platform-native feel, CTA timing, and risks. If raw video frames/transcript are not available, say confidence is limited by missing frame/audio extraction instead of pretending certainty." : "If image details are visible, evaluate visual hierarchy, product visibility, contrast, readability, and face/person presence."}
-
-Return JSON in this exact format:
-{
-  "overall_score": 0,
-  "confidence": "Low | Medium | High",
-  "recommended_action": "Run | Revise | Reject",
-  "input_summary": { "has_copy": true, "has_creative": true, "creative_type": "image | video | none", "has_link": true },
-  "scores": {
-    "platform_fit": { "score": 0, "max": 15, "feedback": "" },
-    "objective_fit": { "score": 0, "max": 15, "feedback": "" },
-    "audience_fit": { "score": 0, "max": 15, "feedback": "" },
-    "hook": { "score": 0, "max": 15, "feedback": "" },
-    "creative_strength": { "score": 0, "max": 15, "feedback": "" },
-    "clarity": { "score": 0, "max": 10, "feedback": "" },
-    "offer": { "score": 0, "max": 10, "feedback": "" },
-    "cta": { "score": 0, "max": 5, "feedback": "" }
-  },
-  "detected_angle": { "angle": "Problem-solution | Social proof | Offer-driven | Curiosity | Educational | UGC-style | Brand awareness | Other", "explanation": "" },
-  "key_strengths": [],
-  "critical_issues": [],
-  "improvements": [],
-  "hook_rewrites": [],
-  "creative_recommendations": [],
-  "video_analysis": {
-    "audit_type": "none | basic_video | full_video",
-    "summary": "",
-    "first_three_seconds": { "score": 0, "max": 20, "feedback": "" },
-    "visual_flow": { "score": 0, "max": 20, "feedback": "" },
-    "on_screen_text": { "score": 0, "max": 15, "feedback": "" },
-    "product_clarity": { "score": 0, "max": 15, "feedback": "" },
-    "cta_timing": { "score": 0, "max": 10, "feedback": "" },
-    "platform_native_feel": { "score": 0, "max": 10, "feedback": "" },
-    "retention_risks": [],
-    "scene_recommendations": []
-  },
-  "final_verdict": ""
-}
-
-Rules:
-- Scores must total 100 across the max values.
-- Be strict. Do not inflate scores.
-- Clearly separate copy analysis, creative analysis, landing/post context analysis, and overall recommendation.
-- Feedback must be specific to platform, objective, audience, copy, creative, and link context provided.
-- Do not scrape the post link. Treat it as context only.
-- If video was uploaded, fill video_analysis with specific reasons and fixes. Never describe it as a full frame-by-frame analysis unless frames/transcript were actually provided.
-- Avoid generic advice like "make it more engaging."
-- Explain exactly what is weak and how to improve it.`;
+  return `Task: score one ad. Return JSON only.
+Context: platform=${context.platform}; objective=${context.objective}; audience=${context.audience || "Not provided"}.
+Input: copy="${ad.adCopy || "Not provided"}"; link="${ad.postLink || "Not provided"}"; link_platform="${ad.detectedPlatform || "Not detected"}"; creative=${ad.creativeType}; file="${ad.creativeFilename || "none"}"; video_seconds=${ad.videoDuration || 0}; video_frames=${ad.videoFrames.length}.
+Video rule: if frames are attached, analyze visible frames only; no audio/full-video assumptions.
+Schema keys: overall_score, confidence, recommended_action, input_summary, scores, detected_angle, key_strengths, critical_issues, improvements, hook_rewrites, creative_recommendations, video_analysis, final_verdict.
+Scores max: platform_fit 15, objective_fit 15, audience_fit 15, hook 15, creative_strength 15, clarity 10, offer 10, cta 5. Overall totals 100.
+Arrays: key_strengths 1-3, critical_issues 1-3, improvements 3-5 under 12 words, hook_rewrites exactly 3, creative_recommendations 1-4.
+Use existing UI shape: each scores item is {score,max,feedback}; detected_angle is {angle,explanation}; video_analysis includes audit_type, summary, six score sections, retention_risks, scene_recommendations.`;
 }
 
 function buildComparePrompt(context, ads) {
-  return `Compare these ads for the same campaign. Do not pick the highest score blindly.
-
-Campaign context:
-- Platform: ${context.platform}
-- Objective: ${context.objective}
-- Target audience: ${context.audience || "Not provided"}
-
+  return `Task: compare ads for one campaign. Return JSON only.
+Context: platform=${context.platform}; objective=${context.objective}; audience=${context.audience || "Not provided"}.
 Ads:
-${ads.map((ad) => `Ad ${ad.ad_id}:
-- Copy: ${ad.adCopy || "Not provided"}
-- Link: ${ad.postLink || "Not provided"}
-- Platform detected from link: ${ad.detectedPlatform || "Not detected"}
-- Video duration: ${ad.videoDuration || "none"}
-- Creative: ${creativeLine(ad)}`).join("\n\n")}
-
-Return JSON in this exact format:
-{
-  "campaign_context": { "platform": "", "objective": "", "target_audience": "" },
-  "ads": [
-    {
-      "ad_id": "A",
-      "overall_score": 0,
-      "confidence": "Low | Medium | High",
-      "recommended_action": "Run | Revise | Reject",
-      "strongest_point": "",
-      "weakest_point": "",
-      "scores": {
-        "platform_fit": 0,
-        "objective_fit": 0,
-        "audience_fit": 0,
-        "hook": 0,
-        "creative_strength": 0,
-        "clarity": 0,
-        "offer": 0,
-        "cta": 0
-      },
-      "what_to_keep": [],
-      "what_to_fix": [],
-      "suggested_hook_rewrite": "",
-      "creative_recommendation": ""
-    }
-  ],
-  "ranking": [{ "rank": 1, "ad_id": "B", "score": 0, "reason": "" }],
-  "winner": { "ad_id": "", "score": 0, "why_it_won": "", "remaining_risk": "" },
-  "final_recommendation": "",
-  "test_plan": { "primary_ad": "", "backup_ad": "", "testing_note": "" }
-}
-
-Rules:
-- If two ads are within 5 points, recommend A/B testing instead of declaring a hard winner.
-- If all ads score below 60, recommend revising all ads before running.
-- If an ad has low confidence due to missing copy/creative/context, flag that clearly.
-- If the winning ad has weak CTA or unclear offer, mention the risk.
-- If video is uploaded, compare video strength through first 3 seconds, pacing, product clarity, CTA timing, and platform-native feel.
-- Consider score difference, confidence, objective fit, creative strength, offer clarity, targeting risk, and input completeness.`;
+${ads.map((ad) => `${ad.ad_id}: copy="${ad.adCopy || "Not provided"}"; link="${ad.postLink || "Not provided"}"; link_platform="${ad.detectedPlatform || "Not detected"}"; creative=${creativeLine(ad)}`).join("\n")}
+Schema keys: campaign_context, ads, ranking, winner, final_recommendation, test_plan.
+Per ad: ad_id, overall_score, confidence, recommended_action, strongest_point, weakest_point, scores, what_to_keep, what_to_fix, suggested_hook_rewrite, creative_recommendation.
+Scores max: platform_fit 15, objective_fit 15, audience_fit 15, hook 15, creative_strength 15, clarity 10, offer 10, cta 5.
+Rules: within 5 points => A/B test. All below 60 => revise all. Flag low-confidence incomplete inputs. Mention weak CTA/offer risk. If frames are attached, analyze visible frames only.`;
 }
 
 function inferConfidence(context, ad) {
@@ -300,8 +286,8 @@ function buildVideoAnalysis(context, ad, signals = {}) {
   const nativeScore = Math.min(10, 5 + (tiktokLike ? 3 : 1) + (isShort ? 1 : 0));
 
   return {
-    audit_type: "full_video",
-    summary: `${ad.creativeFilename || "Uploaded video"} is treated as a video ad audit for ${context.platform}. The scorecard focuses on the first 3 seconds, motion clarity, offer visibility, and CTA timing because those areas decide whether a short-form ad earns attention before budget is spent.`,
+    audit_type: ad.videoFrames?.length ? "basic_video" : "full_video",
+    summary: ad.videoFrames?.length ? `Audit uses ${ad.videoFrames.length} sampled frames only; audio and full motion are not assumed.` : `${ad.creativeFilename || "Uploaded video"} is treated as a video ad audit for ${context.platform}.`,
     first_three_seconds: videoSection(firstScore, 20, signals.hasCopy ? "The opening has enough message context to judge the hook, but it still needs a sharper visual or text cue in the first second." : "The video needs a clear first-frame text hook so the viewer understands the promise before sound or context loads."),
     visual_flow: videoSection(flowScore, 20, isShort ? "The duration is suitable for a fast paid social test; keep each scene focused on one idea." : "The video may be long for a cold paid-social placement; tighten the sequence around hook, proof, offer, and CTA."),
     on_screen_text: videoSection(textScore, 15, signals.hasCopy ? "Use the strongest copy as large on-screen text, not only in the caption. Keep it readable on mobile." : "Add concise on-screen text so the ad works without sound."),
@@ -354,11 +340,11 @@ function normalizeSingle(value = {}, context = {}, ad = {}) {
     },
     scores,
     detected_angle: { angle, explanation: String(value.detected_angle?.explanation || `${angle}: inferred from the ad copy and supplied context.`) },
-    key_strengths: arrayOr(value.key_strengths, ["The ad has enough structure to evaluate."]),
-    critical_issues: arrayOr(value.critical_issues, ["The ad needs sharper proof, CTA, or audience specificity before scaling."]),
-    improvements: arrayOr(value.improvements, ["Clarify the hook, offer, and CTA before running."]),
-    hook_rewrites: arrayOr(value.hook_rewrites, ["Stop wasting budget on ads your audience scrolls past."]),
-    creative_recommendations: arrayOr(value.creative_recommendations, [ad.creativeType === "video" ? "Treat the opening, captions, product visibility, and CTA timing as separate fixes instead of giving the video one generic creative score." : "Improve visual hierarchy, contrast, and product visibility."]),
+    key_strengths: shortArray(value.key_strengths, ["Clear enough to score."], { min: 1, max: 3 }),
+    critical_issues: shortArray(value.critical_issues, ["Hook, offer, or CTA needs sharpening."], { min: 1, max: 3 }),
+    improvements: shortArray(value.improvements, ["Clarify the hook.", "Strengthen the offer.", "Make CTA direct."], { min: 3, max: 5 }),
+    hook_rewrites: shortArray(value.hook_rewrites, ["Stop wasting budget on weak ads.", "Know before you spend.", "Fix the ad before launch."], { min: 3, max: 3 }),
+    creative_recommendations: shortArray(value.creative_recommendations, [ad.creativeType === "video" ? "Improve first-frame clarity." : "Improve visual hierarchy."], { min: 1, max: 4 }),
     video_analysis: normalizeVideoAnalysis(value.video_analysis, context, ad),
     final_verdict: String(value.final_verdict || `${action} this ad based on the current score and confidence.`),
   };
@@ -394,34 +380,81 @@ function arrayOr(value, fallback) {
   return Array.isArray(value) && value.length ? value.slice(0, 6).map(String) : fallback;
 }
 
+function shortArray(value, fallback, { min = 1, max = 5 } = {}) {
+  const source = Array.isArray(value) ? value.map((item) => compactText(item, 140)).filter(Boolean) : [];
+  const merged = [...source, ...fallback].slice(0, max);
+  while (merged.length < min) merged.push(fallback[merged.length % fallback.length] || "Clarify the offer.");
+  return merged;
+}
+
 function parseJson(text) {
-  return JSON.parse(text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim());
+  const cleaned = String(text || "").replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+  try {
+    return JSON.parse(cleaned);
+  } catch (error) {
+    console.error("AI JSON parse failed:", error);
+    throw error;
+  }
 }
 
 function imagePayload(ad) {
   if (!ad.imageData?.startsWith("data:image/")) return null;
-  return { type: "image_url", image_url: { url: ad.imageData } };
+  return { type: "input_image", image_url: ad.imageData };
+}
+
+function videoFramePayloads(ad) {
+  return (ad.videoFrames || []).filter((frame) => String(frame).startsWith("data:image/")).slice(0, MAX_VIDEO_FRAMES).map((frame) => ({ type: "input_image", image_url: frame }));
+}
+
+function openAiModel(mode = "text") {
+  if (mode === "vision") return process.env.OPENAI_VISION_MODEL || process.env.OPENAI_MODEL || process.env.OPENAI_TEXT_MODEL || "gpt-5.4-mini";
+  return process.env.OPENAI_TEXT_MODEL || process.env.OPENAI_MODEL || "gpt-5.4-mini";
+}
+
+function extractResponseText(data = {}) {
+  if (data.output_text) return data.output_text;
+  const chunks = [];
+  for (const item of data.output || []) {
+    for (const part of item.content || []) {
+      if (part.type === "output_text" && part.text) chunks.push(part.text);
+      if (part.type === "text" && part.text) chunks.push(part.text);
+    }
+  }
+  return chunks.join("");
+}
+
+async function callOpenAI(content, maxOutputTokens, mode = "text") {
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "content-type": "application/json" },
+    body: JSON.stringify({
+      model: openAiModel(mode),
+      instructions: AD_DECISION_SYSTEM_PROMPT,
+      input: [{ role: "user", content }],
+      temperature: 0.2,
+      top_p: 1,
+      max_output_tokens: maxOutputTokens,
+      text: { format: { type: "json_object" } },
+      store: false,
+    }),
+  });
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+    throw new Error(`OpenAI request failed: ${response.status} ${errorText.slice(0, 240)}`);
+  }
+  return response.json();
 }
 
 async function analyzeWithOpenAI(context, ad, allowImageAnalysis = false) {
-  const content = [{ type: "text", text: buildSinglePrompt(context, ad) }];
+  const content = [{ type: "input_text", text: buildSinglePrompt(context, ad) }];
   // Free/demo plan rule: images are preview-only and must not be sent for AI analysis.
   // Future billing/auth should pass allowImageAnalysis=true only for Plus/Pro requests.
   const image = allowImageAnalysis ? imagePayload(ad) : null;
   if (image) content.push(image);
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [{ role: "system", content: "You are a strict direct response ad strategist. Return only valid JSON." }, { role: "user", content }],
-    }),
-  });
-  if (!response.ok) throw new Error("OpenAI request failed.");
-  const data = await response.json();
-  return normalizeSingle(parseJson(data.choices?.[0]?.message?.content || "{}"), context, ad);
+  if (allowImageAnalysis && ad.creativeType === "video") content.push(...videoFramePayloads(ad));
+  const mode = allowImageAnalysis && (image || ad.videoFrames?.length) ? "vision" : "text";
+  const data = await callOpenAI(content, SINGLE_OUTPUT_TOKENS, mode);
+  return normalizeSingle(parseJson(extractResponseText(data)), context, ad);
 }
 
 async function analyzeSingle(context, ad, allowImageAnalysis = false) {
@@ -473,28 +506,20 @@ function compareMock(context, ads) {
 }
 
 async function compareWithOpenAI(context, ads, allowImageAnalysis = false) {
-  const content = [{ type: "text", text: buildComparePrompt(context, ads) }];
+  const content = [{ type: "input_text", text: buildComparePrompt(context, ads) }];
   // Free/demo plan rule: images are preview-only and must not be sent for AI analysis.
   // Future billing/auth should pass allowImageAnalysis=true only for Plus/Pro requests.
   if (allowImageAnalysis) {
     for (const ad of ads) {
       const image = imagePayload(ad);
-      if (image) content.push({ type: "text", text: `Image creative for Ad ${ad.ad_id}` }, image);
+      if (image) content.push({ type: "input_text", text: `Image creative for Ad ${ad.ad_id}` }, image);
+      const frames = videoFramePayloads(ad);
+      if (frames.length) content.push({ type: "input_text", text: `Sampled video frames for Ad ${ad.ad_id}. Analyze visible frames only.` }, ...frames);
     }
   }
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "content-type": "application/json" },
-    body: JSON.stringify({
-      model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-      temperature: 0.2,
-      response_format: { type: "json_object" },
-      messages: [{ role: "system", content: "You are a strict ad testing strategist. Return only valid JSON." }, { role: "user", content }],
-    }),
-  });
-  if (!response.ok) throw new Error("OpenAI compare request failed.");
-  const data = await response.json();
-  return normalizeCompare(parseJson(data.choices?.[0]?.message?.content || "{}"), context, ads);
+  const hasVisionInput = allowImageAnalysis && ads.some((ad) => ad.imageData || ad.videoFrames?.length);
+  const data = await callOpenAI(content, COMPARE_OUTPUT_TOKENS, hasVisionInput ? "vision" : "text");
+  return normalizeCompare(parseJson(extractResponseText(data)), context, ads);
 }
 
 function normalizeCompare(value = {}, context, ads) {
@@ -522,6 +547,28 @@ function normalizeCompare(value = {}, context, ads) {
   };
 }
 
+function rateLimitKey(request, auth) {
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return auth?.user?.id || forwarded || "anonymous";
+}
+
+function checkRateLimit(request, auth) {
+  if (!process.env.OPENAI_API_KEY || auth?.demo) return null;
+  const key = rateLimitKey(request, auth);
+  const now = Date.now();
+  const bucket = rateBuckets.get(key);
+  if (!bucket || now > bucket.resetAt) {
+    rateBuckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return null;
+  }
+  if (bucket.count >= RATE_LIMIT_MAX) {
+    const retryAfter = Math.ceil((bucket.resetAt - now) / 1000);
+    return NextResponse.json({ error: "Rate limit reached. Try again in a few minutes.", retry_after: retryAfter }, { status: 429 });
+  }
+  bucket.count += 1;
+  return null;
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -532,12 +579,16 @@ export async function POST(request) {
       if (ads.length < 2) return NextResponse.json({ error: "At least two ads need copy, creative, or a post link." }, { status: 400 });
       const auth = await authorizeAnalysisRequest(request, { compare: true, ads });
       if (!auth.allowed) return auth.response;
+      const rateLimitResponse = checkRateLimit(request, auth);
+      if (rateLimitResponse) return rateLimitResponse;
+      let reservation = null;
       try {
+        if (process.env.OPENAI_API_KEY && !auth.demo) reservation = await reserveUsage(auth, "compare", { ad_count: ads.length, creative_types: ads.map((ad) => ad.creativeType) });
         const result = process.env.OPENAI_API_KEY ? await compareWithOpenAI(context, ads, auth.allowImageAnalysis) : compareMock(context, ads);
-        await recordUsage(auth, "compare", { ad_count: ads.length, creative_types: ads.map((ad) => ad.creativeType) });
         return NextResponse.json(result);
       } catch (error) {
         console.error("Compare AI failed, returning mock:", error);
+        await refundUsage(auth, reservation, "compare_ai_failed");
         return NextResponse.json(compareMock(context, ads));
       }
     }
@@ -546,12 +597,16 @@ export async function POST(request) {
     if (!hasInput(ad)) return NextResponse.json({ error: "Provide ad copy, a creative upload, or an ad/post link." }, { status: 400 });
     const auth = await authorizeAnalysisRequest(request, { ad });
     if (!auth.allowed) return auth.response;
+    const rateLimitResponse = checkRateLimit(request, auth);
+    if (rateLimitResponse) return rateLimitResponse;
+    let reservation = null;
     try {
+      if (process.env.OPENAI_API_KEY && !auth.demo) reservation = await reserveUsage(auth, "single", { creative_type: ad.creativeType });
       const result = await analyzeSingle(context, ad, auth.allowImageAnalysis);
-      await recordUsage(auth, "single", { creative_type: ad.creativeType });
       return NextResponse.json(result);
     } catch (error) {
       console.error("Analyze AI failed, returning mock:", error);
+      await refundUsage(auth, reservation, "single_ai_failed");
       return NextResponse.json(mockSingle(context, ad));
     }
   } catch (error) {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Check, Clock, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Clock } from "lucide-react";
 import AuthCard from "../../components/AuthCard";
 import BillingStatus from "../../components/BillingStatus";
 import CheckoutButton from "../../components/CheckoutButton";
@@ -66,13 +66,12 @@ export const metadata = {
 
 export default function PricingPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="app-page min-h-screen bg-slate-950 text-white">
       <Navbar />
 
       <section className="mx-auto max-w-6xl px-6 py-14">
         <div className="mx-auto max-w-3xl text-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-sm font-medium text-cyan-200">
-            <Sparkles size={15} />
+          <div className="app-pricing-eyebrow mb-5 inline-flex items-center rounded-full px-4 py-2 text-sm font-black">
             Early pricing with Lemon Squeezy checkout
           </div>
           <h1 className="text-5xl font-black tracking-tight md:text-6xl">
@@ -92,9 +91,9 @@ export default function PricingPage() {
           {plans.map((plan) => (
             <section
               key={plan.name}
-              className={`rounded-xl border p-6 ${
+              className={`pricing-plan-card app-card rounded-xl border p-6 ${
                 plan.featured
-                  ? "border-cyan-300/50 bg-cyan-300/[0.07] shadow-2xl shadow-cyan-950/20"
+                  ? "pricing-plan-card--featured border-cyan-300/50 bg-cyan-300/[0.07] shadow-2xl shadow-cyan-950/20"
                   : "border-white/10 bg-white/[0.04]"
               }`}
             >
@@ -114,7 +113,7 @@ export default function PricingPage() {
               {plan.name === "Free" ? (
                 <Link
                   href="/dashboard"
-                  className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
+                  className="app-secondary-action mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
                 >
                   {plan.cta}
                   <ArrowRight size={16} />
@@ -137,7 +136,7 @@ export default function PricingPage() {
           ))}
         </div>
 
-        <div className="mt-8 rounded-xl border border-white/10 bg-slate-900/60 p-6">
+        <div className="pricing-note app-card mt-8 rounded-xl border border-white/10 bg-slate-900/60 p-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex gap-3">
               <Clock className="mt-1 shrink-0 text-cyan-300" size={20} />
@@ -148,7 +147,7 @@ export default function PricingPage() {
                 </p>
               </div>
             </div>
-            <Link href="/dashboard" className="inline-flex shrink-0 items-center justify-center rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
+            <Link href="/dashboard" className="app-primary-action app-floating-action inline-flex shrink-0 items-center justify-center rounded-full bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
               Try Adnex
             </Link>
           </div>

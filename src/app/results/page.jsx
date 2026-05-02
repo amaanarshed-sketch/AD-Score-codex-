@@ -14,7 +14,7 @@ export default function ResultsPage() {
   });
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="app-page min-h-screen bg-slate-950 text-white">
       <Navbar />
       <section className="mx-auto max-w-5xl px-6 py-10">
         <div className="mb-8 flex flex-col justify-between gap-4 md:flex-row md:items-end">
@@ -23,12 +23,12 @@ export default function ResultsPage() {
               <ArrowLeft size={16} />
               Back to dashboard
             </Link>
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-cyan-300">Results</p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">Ad performance score</h1>
+            <p className="app-eyebrow text-sm font-black uppercase tracking-[0.18em] text-cyan-300">Results</p>
+            <h1 className="app-title mt-3 text-4xl font-black tracking-tight md:text-5xl">Ad performance score</h1>
           </div>
           <Link
             href="/compare"
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+            className="app-secondary-action inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
           >
             <GitCompareArrows size={16} />
             Compare another ad
@@ -76,12 +76,12 @@ export default function ResultsPage() {
             <ScoreResult result={payload.result} context={payload.context} />
           </div>
         ) : (
-          <div className="rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center">
-            <h2 className="text-2xl font-black">No result yet</h2>
-            <p className="mt-3 text-slate-400">Run an analysis first, then the scorecard will appear here.</p>
+          <div className="app-card rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center">
+            <h2 className="app-title text-2xl font-black">No result yet</h2>
+            <p className="app-muted mt-3 text-slate-400">Run an analysis first, then the scorecard will appear here.</p>
             <Link
               href="/dashboard"
-              className="mt-6 inline-flex rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200"
+              className="app-primary-action mt-6 inline-flex rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200"
             >
               Analyze Ad
             </Link>

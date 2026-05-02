@@ -25,24 +25,24 @@ export default function HistoryPage() {
   const [history] = useState(() => getAnalysisHistory());
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="app-page min-h-screen bg-slate-950 text-white">
       <Navbar />
 
       <section className="mx-auto w-full max-w-6xl px-6 py-10">
         <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-cyan-300">Saved Locally</p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">Analysis history</h1>
-            <p className="mt-3 max-w-2xl text-slate-400">
+            <p className="app-eyebrow text-sm font-black uppercase tracking-[0.18em] text-cyan-300">Saved Locally</p>
+            <h1 className="app-title mt-3 text-4xl font-black tracking-tight md:text-5xl">Analysis history</h1>
+            <p className="app-muted mt-3 max-w-2xl text-slate-400">
               Recent ad scores are saved in this browser so you can compare decisions without setting up accounts or a database yet.
             </p>
           </div>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/dashboard" className="inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
+            <Link href="/dashboard" className="app-primary-action inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
               <Sparkles size={16} />
               Analyze Ad
             </Link>
-            <Link href="/compare" className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10">
+            <Link href="/compare" className="app-secondary-action inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10">
               <GitCompareArrows size={16} />
               Compare Ads
             </Link>
@@ -84,10 +84,10 @@ export default function HistoryPage() {
             ))}
           </div>
         ) : (
-          <section className="rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center">
-            <h2 className="text-2xl font-black">No saved analyses yet</h2>
-            <p className="mt-3 text-slate-400">Run a single analysis or compare ads, then your recent results will appear here.</p>
-            <Link href="/dashboard" className="mt-6 inline-flex items-center gap-2 rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
+          <section className="app-card rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center">
+            <h2 className="app-title text-2xl font-black">No saved analyses yet</h2>
+            <p className="app-muted mt-3 text-slate-400">Run a single analysis or compare ads, then your recent results will appear here.</p>
+            <Link href="/dashboard" className="app-primary-action mt-6 inline-flex items-center gap-2 rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
               Start first analysis
               <ArrowRight size={16} />
             </Link>

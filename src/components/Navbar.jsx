@@ -1,49 +1,87 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { UserRound } from "lucide-react";
+import { useAuth } from "./AuthProvider";
+import ThemeToggle from "./ThemeToggle";
 
 function AdnexMark({ className = "" }) {
   return (
-    <svg className={className} viewBox="0 0 40 40" aria-hidden="true" fill="none">
-      <rect x="4" y="4" width="32" height="32" rx="9" fill="url(#adnex-mark-fill)" />
-      <path d="M13 25.5 19.2 12.8c.32-.66 1.26-.66 1.58 0L27 25.5" stroke="#050505" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M15.6 21.4h8.8" stroke="#050505" strokeWidth="2.6" strokeLinecap="round" />
-      <path d="M27.6 13.4h1.8m-3 4h4.2m-3 4h1.8" stroke="#050505" strokeWidth="1.8" strokeLinecap="round" />
-      <defs>
-        <linearGradient id="adnex-mark-fill" x1="9" y1="7" x2="31" y2="34" gradientUnits="userSpaceOnUse">
-          <stop stopColor="#FFFFFF" />
-          <stop offset="1" stopColor="#C9CED8" />
-        </linearGradient>
-      </defs>
+    <svg className={className} viewBox="0 0 48 48" aria-hidden="true" fill="none">
+      <rect x="1" y="1" width="46" height="46" rx="13" fill="var(--surface-elevated)" />
+      <rect x="1" y="1" width="46" height="46" rx="13" stroke="var(--border)" strokeWidth="1.5" />
+      <path
+        d="M10.5 30.2a16 16 0 1 1 27 0"
+        stroke="#2563EB"
+        strokeWidth="5.6"
+        strokeLinecap="round"
+      />
+      <path d="M24 29.5 35.2 18.3" stroke="#2563EB" strokeWidth="4.6" strokeLinecap="round" />
+      <circle cx="24" cy="30" r="5.8" fill="#2563EB" />
+      <circle cx="24" cy="30" r="2" fill="#1D4ED8" opacity="0.7" />
     </svg>
   );
 }
 
 export default function Navbar() {
+  const pathname = usePathname();
+  const { configured, user, loading } = useAuth();
+  const metadata = user?.user_metadata || {};
+  const avatarUrl = metadata.avatar_url || metadata.picture || "";
+  const displayName = metadata.full_name || metadata.name || user?.email?.split("@")[0] || "Account";
+  const fallbackInitial = displayName.charAt(0).toUpperCase();
+  const links = [
+    { href: "/pricing", label: "Pricing" },
+    { href: "/dashboard", label: "Dashboard" },
+    { href: "/history", label: "History", className: "hidden md:inline-flex" },
+    { href: "/compare", label: "Compare" },
+  ];
+
+  function navLinkClass(href, extra = "") {
+    const isActive = pathname === href || pathname?.startsWith(`${href}/`);
+    return [
+      "app-nav-link nav-link rounded-lg px-3 py-2 text-sm font-semibold transition",
+      isActive ? "app-nav-link-active" : "",
+      extra,
+    ].filter(Boolean).join(" ");
+  }
+
   return (
-    <header className="border-b border-white/10 bg-slate-950/80 backdrop-blur">
-      <div className="mx-auto flex min-h-[72px] max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Link href="/" className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center">
-            <AdnexMark className="h-9 w-9 drop-shadow-[0_18px_38px_rgba(255,255,255,0.16)]" />
+    <header className="app-nav">
+      <div className="app-container flex min-h-[72px] items-center justify-between gap-3 px-3 py-3 sm:px-5">
+        <Link href="/" className="app-logo-link flex shrink-0 items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center">
+            <AdnexMark className="h-10 w-10" />
           </span>
-          <span className="text-lg font-black tracking-tight text-white">Adnex</span>
+          <span className="app-brand text-xl font-black tracking-[-0.04em]">ADNex</span>
         </Link>
 
-        <nav className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <Link href="/pricing" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">
-            Pricing
-          </Link>
-          <Link href="/dashboard" className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white">
-            Dashboard
-          </Link>
-          <Link href="/history" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white md:inline-flex">
-            History
-          </Link>
-          <Link href="/account" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-300 transition hover:bg-white/10 hover:text-white sm:inline-flex">
-            Account
-          </Link>
-          <Link href="/compare" className="rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white transition hover:bg-white/15">
-            Compare
-          </Link>
+        <nav className="nav-scroll flex min-w-0 items-center gap-1 overflow-x-auto sm:gap-2">
+          {links.map((link) => (
+            <Link key={link.href} href={link.href} className={navLinkClass(link.href, link.className)}>
+              {link.label}
+            </Link>
+          ))}
+          <ThemeToggle />
+          {configured && !loading ? (
+            <Link
+              href="/account"
+              className="account-chip ml-1 inline-flex h-10 items-center gap-2 rounded-lg px-2.5 py-1 text-sm font-bold"
+              aria-label={user ? `Open account for ${displayName}` : "Sign in to Adnex"}
+            >
+              <span className="account-avatar flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full">
+                {user && avatarUrl ? (
+                  <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
+                ) : user ? (
+                  <span className="text-xs font-black">{fallbackInitial}</span>
+                ) : (
+                  <UserRound size={15} />
+                )}
+              </span>
+              <span className="hidden max-w-[110px] truncate pr-1 sm:inline">{user ? displayName : "Sign in"}</span>
+            </Link>
+          ) : null}
         </nav>
       </div>
     </header>

@@ -3,12 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowRight, BadgeCheck, GitCompareArrows, Loader2, Sparkles } from "lucide-react";
+import { BadgeCheck, GitCompareArrows, Loader2, Settings2 } from "lucide-react";
 import AdInputBlock, { apiAdPayload, emptyAdInput, validateAdInput } from "../../components/AdInputBlock";
-import AuthCard from "../../components/AuthCard";
-import BillingStatus from "../../components/BillingStatus";
 import Navbar from "../../components/Navbar";
-import ProductStatus from "../../components/ProductStatus";
 import { useAuth } from "../../components/AuthProvider";
 import { saveAnalysisHistory } from "../../lib/history";
 
@@ -47,7 +44,7 @@ export default function DashboardPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Analysis failed.");
 
-      const storedAd = { ...ad, imageData: "", creativePreview: "" };
+      const storedAd = { ...ad, imageData: "", videoFrames: [], creativePreview: "" };
       sessionStorage.setItem("adnex:last-result", JSON.stringify({ result: data, ad: storedAd, context }));
       saveAnalysisHistory({
         type: "single",
@@ -83,36 +80,46 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="app-page min-h-screen bg-slate-950 text-white">
       <Navbar />
 
-      <section className="mx-auto w-full max-w-6xl px-6 py-10">
-        <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+      <section className="mx-auto w-full max-w-6xl px-6 py-8">
+        <div className="mb-6 flex flex-col justify-between gap-5 md:flex-row md:items-end">
           <div>
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-cyan-300">Single Analysis</p>
-            <h1 className="mt-3 text-4xl font-black tracking-tight md:text-5xl">Score one ad before launch.</h1>
-            <p className="mt-3 max-w-2xl text-slate-400">
+            <p className="app-eyebrow text-sm font-black uppercase tracking-[0.18em] text-cyan-300">Single Analysis</p>
+            <h1 className="app-title mt-3 text-3xl font-black tracking-tight md:text-5xl">Score one ad before launch.</h1>
+            <p className="app-muted mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
               Provide copy, a creative, a post link, or any combination. Adnex will judge the campaign context and return a strict launch recommendation.
             </p>
           </div>
           <Link
             href="/compare"
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
+            className="app-secondary-action inline-flex self-start items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
           >
             <GitCompareArrows size={16} />
             Compare Ads
           </Link>
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr]">
-          <aside className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
-            <div className="mb-5 grid gap-4">
+        <section className="mx-auto max-w-5xl">
+          <div className="app-card workbench-card mb-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="app-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white">
+                <Settings2 size={17} />
+              </span>
+              <div>
+                <p className="app-eyebrow text-xs font-black uppercase tracking-[0.16em] text-slate-400">Campaign Context</p>
+                <h2 className="app-title text-lg font-black text-white">Set the basics</h2>
+              </div>
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-[1fr_0.8fr_1.35fr]">
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-slate-200">Platform</span>
+                <span className="app-label mb-2 block text-sm font-bold text-slate-200">Platform</span>
                 <select
                   value={platform}
                   onChange={(event) => handlePlatformChange(event.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm text-white outline-none transition focus:border-cyan-300/60"
+                  className="app-control w-full rounded-lg border p-3 text-sm outline-none transition"
                 >
                   {platforms.map((item) => (
                     <option key={item} value={item}>{item}</option>
@@ -123,17 +130,15 @@ export default function DashboardPage() {
                     <BadgeCheck size={13} />
                     {platformSource.label}
                   </div>
-                ) : (
-                  <p className="mt-2 text-xs leading-5 text-slate-500">Copy or creative-only ads need a manual platform choice.</p>
-                )}
+                ) : null}
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-slate-200">Ad Objective</span>
+                <span className="app-label mb-2 block text-sm font-bold text-slate-200">Objective</span>
                 <select
                   value={objective}
                   onChange={(event) => setObjective(event.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm text-white outline-none transition focus:border-cyan-300/60"
+                  className="app-control w-full rounded-lg border p-3 text-sm outline-none transition"
                 >
                   {objectives.map((item) => (
                     <option key={item} value={item}>{item}</option>
@@ -142,38 +147,31 @@ export default function DashboardPage() {
               </label>
 
               <label className="block">
-                <span className="mb-2 block text-sm font-bold text-slate-200">Target Audience</span>
+                <span className="app-label mb-2 block text-sm font-bold text-slate-200">Audience</span>
                 <input
                   value={audience}
                   onChange={(event) => setAudience(event.target.value)}
-                  placeholder="Example: small business owners in Sri Lanka, gym beginners, new parents, ecommerce shoppers"
-                  className="w-full rounded-lg border border-white/10 bg-slate-950 p-3 text-sm text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-300/60"
+                  placeholder="Example: ecommerce shoppers in Sri Lanka"
+                  className="app-control w-full rounded-lg border p-3 text-sm outline-none transition"
                 />
               </label>
             </div>
+          </div>
 
-            <AuthCard />
-            <BillingStatus compact />
-            <ProductStatus />
-          </aside>
+          <AdInputBlock title="Ad Input" value={ad} onChange={handleAdChange} />
 
-          <section>
-            <AdInputBlock title="Ad Input" value={ad} onChange={handleAdChange} />
+          {error ? <p className="mt-4 rounded-lg border border-rose-400/25 bg-rose-400/10 p-3 text-sm text-rose-200">{error}</p> : null}
 
-            {error ? <p className="mt-4 rounded-lg border border-rose-400/25 bg-rose-400/10 p-3 text-sm text-rose-200">{error}</p> : null}
-
-            <button
-              type="button"
-              onClick={analyze}
-              disabled={loading}
-              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {loading ? <Loader2 className="animate-spin" size={17} /> : <Sparkles size={17} />}
-              {loading ? "Analyzing..." : "Analyze Ad"}
-              {!loading ? <ArrowRight size={17} /> : null}
-            </button>
-          </section>
-        </div>
+          <button
+            type="button"
+            onClick={analyze}
+            disabled={loading}
+            className="app-primary-action app-floating-action mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-cyan-300 px-6 py-4 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            {loading ? <Loader2 className="animate-spin" size={17} /> : null}
+            {loading ? "Analyzing..." : "Analyze Ad"}
+          </button>
+        </section>
       </section>
     </main>
   );

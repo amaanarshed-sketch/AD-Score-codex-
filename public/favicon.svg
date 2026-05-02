@@ -1,13 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Adnex">
-  <rect width="64" height="64" rx="16" fill="#050505"/>
-  <rect x="6" y="6" width="52" height="52" rx="13" fill="url(#fill)"/>
-  <path d="M20 43 30.6 20.8c.5-1.1 2.1-1.1 2.7 0L44 43" fill="none" stroke="#050505" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M24.4 35.6h15.2" stroke="#050505" stroke-width="5" stroke-linecap="round"/>
-  <path d="M45 21.5h3.3m-5.4 7h7.6m-5.4 7h3.3" stroke="#050505" stroke-width="3" stroke-linecap="round"/>
-  <defs>
-    <linearGradient id="fill" x1="14" y1="8" x2="50" y2="58" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFFFFF"/>
-      <stop offset="1" stop-color="#C5CAD4"/>
-    </linearGradient>
-  </defs>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ADNex">
+  <rect width="64" height="64" rx="18" fill="#F7F1E7"/>
+  <path d="M15 41a21 21 0 1 1 34 0" fill="none" stroke="#2563EB" stroke-width="7.5" stroke-linecap="round"/>
+  <path d="M32 40 46 26" stroke="#2563EB" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="32" cy="40" r="7.2" fill="#2563EB"/>
 </svg>

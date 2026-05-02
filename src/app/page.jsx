@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, CheckCircle2, GitCompareArrows, ShieldCheck, Target, Zap } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, GitCompareArrows, ShieldCheck, Sparkles, Target, X, Zap } from "lucide-react";
 import Navbar from "../components/Navbar";
 import ScrollScene from "../components/ScrollScene";
 
@@ -19,24 +19,37 @@ export default function Home() {
     <main className="site-shell min-h-screen bg-slate-950 text-white">
       <Navbar />
 
-      <section className="hero-glass mx-auto flex min-h-[calc(100vh-72px)] w-full max-w-6xl flex-col items-center px-6 pb-16 pt-14 text-center md:pb-20 md:pt-20">
+      <section className="hero-glass mx-auto flex w-full max-w-6xl flex-col items-center px-6 pb-14 pt-12 text-center md:pb-18 md:pt-16">
         <div className="max-w-5xl">
-          <div className="glass-pill mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-sm font-medium text-cyan-200">
+          <div className="glass-pill reveal-up mb-6 inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-400/10 px-3 py-1 text-sm font-medium text-cyan-200">
             <Zap size={15} />
             AI ad scoring for paid media teams
           </div>
-          <h1 className="hero-title mx-auto max-w-5xl text-5xl font-black leading-[0.96] tracking-tight text-white md:text-7xl">
-            Know which ad to run <span className="hero-title__accent">before</span> you spend
+          <div className="reveal-up reveal-delay-1 mb-5 flex items-center justify-center gap-3 text-xs font-bold text-slate-400">
+            <div className="flex -space-x-2">
+              {["A", "D", "N"].map((item) => (
+                <span key={item} className="avatar-bubble flex h-8 w-8 items-center justify-center rounded-full border border-black bg-white text-[0.7rem] font-black text-black">
+                  {item}
+                </span>
+              ))}
+            </div>
+            <span>Built for marketers who need a clean go/no-go decision.</span>
+          </div>
+          <h1 className="hero-title reveal-up reveal-delay-2 mx-auto max-w-5xl text-5xl font-black leading-[0.96] tracking-tight text-white md:text-7xl">
+            Know which ad will{" "}
+            <span className="hero-title__signal">win</span>{" "}
+            <span className="hero-title__before">before</span>{" "}
+            you spend money
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
-            Score copy, image creative, video ads, and link context in one place. Compare variants, spot weak offers, and decide what deserves budget before launch day.
+          <p className="reveal-up reveal-delay-3 mx-auto mt-6 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
+            Analyze your ad copy, creative, and campaign context before you launch. Get a clear score, verdict, and fixes in seconds.
           </p>
-          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <div className="reveal-up reveal-delay-4 mt-8 flex flex-col justify-center gap-3 sm:flex-row">
             <Link
               href="/dashboard"
-              className="premium-button inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-5 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
+              className="premium-button app-floating-action inline-flex items-center justify-center gap-2 rounded-full bg-cyan-300 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
             >
-              Try Adnex
+              Analyze Your Ad
               <ArrowRight size={17} />
             </Link>
             <Link
@@ -46,28 +59,34 @@ export default function Home() {
               See pricing
             </Link>
           </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
-            <span className="inline-flex items-center gap-2"><ShieldCheck size={15} /> Demo mode ready</span>
+          <div className="reveal-up reveal-delay-5 mt-8 flex flex-wrap items-center justify-center gap-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
+            <span className="inline-flex items-center gap-2"><ShieldCheck size={15} /> Auth connected</span>
             <span>Copy + image + video + links</span>
             <span>Compare up to 4 ads</span>
           </div>
         </div>
 
-        <div className="mobile-glass-preview rounded-xl border border-white/10 bg-white/[0.04] p-4 md:hidden">
-          <div className="mb-3 flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-[0.16em] text-slate-400">Live score</span>
-            <span className="rounded-full bg-emerald-300/10 px-2 py-1 text-xs font-bold text-emerald-200">Recommended</span>
-          </div>
-          <div className="flex items-end gap-2">
-            <span className="text-5xl font-black text-cyan-200">82</span>
-            <span className="pb-2 text-sm font-semibold text-slate-500">/100</span>
-          </div>
-          <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-800">
-            <div className="mobile-glass-preview__bar h-full rounded-full bg-cyan-300" />
-          </div>
+        <ScrollScene />
+
+        <div className="home-platform-grid mt-8 grid w-full max-w-6xl grid-cols-2 gap-3 text-center text-xs font-black uppercase tracking-[0.16em] text-slate-400 sm:grid-cols-4">
+          {["Meta", "TikTok", "Google", "LinkedIn"].map((platform) => (
+            <span key={platform} className="platform-chip rounded-full px-5 py-3">{platform}</span>
+          ))}
         </div>
 
-        <ScrollScene />
+        <div className="home-step-grid mt-5 grid w-full max-w-6xl gap-3 text-left md:grid-cols-3">
+          {[
+            ["01", "Drop the asset", "Copy, image, video, or post link."],
+            ["02", "Get the verdict", "Run, revise, or reject with score reasons."],
+            ["03", "Pick the winner", "Compare ads before spend gets real."],
+          ].map(([number, title, detail]) => (
+            <div key={number} className="bubble-card rounded-2xl border border-white/10 bg-black/35 p-5">
+              <p className="font-mono text-xs font-black text-slate-500">{number}</p>
+              <h3 className="mt-3 text-base font-black text-white">{title}</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-400">{detail}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       <section className="glass-section border-t border-white/10 bg-slate-950 px-6 py-16">
@@ -91,6 +110,44 @@ export default function Home() {
                 <div className="mt-2 text-sm text-slate-500">{detail}</div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="glass-section border-t border-white/10 bg-slate-950 px-6 py-16">
+        <div className="mx-auto max-w-6xl">
+          <div className="mb-9 max-w-2xl">
+            <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-cyan-300">Why it feels different</p>
+            <h2 className="text-3xl font-black tracking-tight md:text-4xl">Less guessing. More decision quality.</h2>
+          </div>
+
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="depth-card rounded-2xl border border-white/10 bg-white/[0.04] p-6">
+              <p className="mb-5 text-sm font-black text-slate-500">Generic AI score</p>
+              <div className="space-y-4">
+                {["Scores feel inflated", "Feedback sounds generic", "Creative and copy get mixed together", "No clear run/revise decision"].map((item) => (
+                  <div key={item} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/25 p-3 text-sm text-slate-400">
+                    <X size={16} className="text-slate-500" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="depth-card premium-panel rounded-2xl border border-white/10 bg-white/[0.055] p-6">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <p className="text-sm font-black text-white">Adnex decision layer</p>
+                <span className="rounded-full border border-white/10 bg-white px-3 py-1 text-xs font-black text-black">Premium</span>
+              </div>
+              <div className="space-y-4">
+                {["Strict scoring by platform and objective", "Specific fixes under each score", "Separate copy, creative, link, and video context", "Run, revise, or reject verdict"].map((item) => (
+                  <div key={item} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-slate-200">
+                    <CheckCircle2 size={16} className="text-white" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -128,7 +185,7 @@ export default function Home() {
               <p className="text-sm leading-6 text-slate-300">Compare two ads side-by-side and run the higher-potential option.</p>
             </div>
             <div className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-5">
-              <CheckCircle2 className="mt-1 text-cyan-300" size={20} />
+              <Sparkles className="mt-1 text-cyan-300" size={20} />
               <p className="text-sm leading-6 text-slate-300">Every result includes score reasons, rewrites, CTA improvements, and creative/video fixes.</p>
             </div>
           </div>

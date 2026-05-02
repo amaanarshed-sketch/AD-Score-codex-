@@ -178,7 +178,7 @@ export async function authorizeAnalysisRequest(request, { compare = false, ad, a
   };
 }
 
-export async function recordUsage(auth, featureType, metadata = {}) {
+export async function reserveUsage(auth, featureType, metadata = {}) {
   if (!auth?.supabase || !auth?.user || auth.demo) return null;
   const { periodStart } = getPeriodBounds();
   const { data: balance } = await auth.supabase
@@ -191,11 +191,45 @@ export async function recordUsage(auth, featureType, metadata = {}) {
   if (!balance) return null;
   const nextUsed = Number(balance.used_credits || 0) + Number(auth.credits || 0);
 
-  await auth.supabase.from("usage_events").insert({
+  const { data: event } = await auth.supabase.from("usage_events").insert({
     user_id: auth.user.id,
     feature_type: featureType,
     credits_used: auth.credits,
-    metadata,
+    metadata: { ...metadata, status: "reserved" },
+  }).select("*").single();
+
+  const { data } = await auth.supabase
+    .from("credit_balances")
+    .update({ used_credits: nextUsed })
+    .eq("id", balance.id)
+    .select("*")
+    .single();
+
+  return { balance: data, event };
+}
+
+export async function refundUsage(auth, reservation, reason = "ai_failed") {
+  if (!auth?.supabase || !auth?.user || auth.demo || !reservation) return null;
+  const { periodStart } = getPeriodBounds();
+  const { data: balance } = await auth.supabase
+    .from("credit_balances")
+    .select("*")
+    .eq("user_id", auth.user.id)
+    .eq("period_start", periodStart)
+    .single();
+
+  if (!balance) return null;
+  const credits = Number(auth.credits || 0);
+  const nextUsed = Math.max(0, Number(balance.used_credits || 0) - credits);
+
+  await auth.supabase.from("usage_events").insert({
+    user_id: auth.user.id,
+    feature_type: "refund",
+    credits_used: -credits,
+    metadata: {
+      reason,
+      reserved_event_id: reservation.event?.id || "",
+    },
   });
 
   const { data } = await auth.supabase
@@ -206,4 +240,8 @@ export async function recordUsage(auth, featureType, metadata = {}) {
     .single();
 
   return data;
+}
+
+export async function recordUsage(auth, featureType, metadata = {}) {
+  return reserveUsage(auth, featureType, metadata);
 }

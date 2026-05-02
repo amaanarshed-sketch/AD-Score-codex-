@@ -24,6 +24,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var s=localStorage.getItem('adnex:theme');var t=s==='light'||s==='dark'?s:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=t;document.documentElement.classList.toggle('dark',t==='dark');document.documentElement.classList.add(t+'-theme');document.body.classList.add(t+'-theme')}catch(e){document.documentElement.dataset.theme='dark';document.documentElement.classList.add('dark','dark-theme');document.body.classList.add('dark-theme')}",
+          }}
+        />
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

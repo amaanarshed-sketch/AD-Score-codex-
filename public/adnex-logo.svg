@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 150" role="img" aria-label="ADNex logo">
+  <rect width="520" height="150" fill="none"/>
+  <g fill="none" stroke="#2563EB" stroke-linecap="round">
+    <path d="M35 103a52 52 0 1 1 84 0" stroke-width="17"/>
+    <path d="M77 103 111 69" stroke-width="13"/>
+  </g>
+  <circle cx="77" cy="103" r="18" fill="#2563EB"/>
+  <text x="150" y="105" fill="#17212B" font-family="Geist, Inter, Arial, sans-serif" font-size="72" font-weight="850" letter-spacing="-3.8">ADNex</text>
+</svg>
