@@ -5774,44 +5774,33 @@ html[data-theme] .app-nav-controls {
 html[data-theme] .app-nav-link {
   position: relative;
   border: 0 !important;
-  border-radius: 0 !important;
+  border-radius: 10px !important;
   background: transparent !important;
   color: var(--text-secondary) !important;
   -webkit-text-fill-color: var(--text-secondary) !important;
   box-shadow: none !important;
+  transition: color 140ms ease, background-color 140ms ease !important;
 }
 
 html[data-theme] .app-nav-link::after {
-  content: "";
-  position: absolute;
-  left: 0.55rem;
-  right: 0.55rem;
-  bottom: 0.25rem;
-  height: 2px;
-  border-radius: 999px;
-  background: transparent;
-  transform: scaleX(0.58);
-  opacity: 0;
-  transition: opacity 180ms ease, transform 180ms ease;
+  display: none !important;
 }
 
 html[data-theme] .app-nav-link:hover {
-  background: transparent !important;
+  background: color-mix(in srgb, var(--surface-elevated) 56%, transparent) !important;
   color: var(--text-primary) !important;
   -webkit-text-fill-color: var(--text-primary) !important;
 }
 
 html[data-theme] .app-nav-link:hover::after {
-  background: color-mix(in srgb, var(--brand) 28%, transparent);
-  opacity: 1;
-  transform: scaleX(1);
+  display: none !important;
 }
 
 html[data-theme] .app-nav-link-active,
 html.light-theme .app-nav-link-active,
 body.light-theme .app-nav-link-active {
   border: 0 !important;
-  background: transparent !important;
+  background: var(--brand-soft) !important;
   color: var(--text-primary) !important;
   -webkit-text-fill-color: var(--text-primary) !important;
 }
@@ -5819,9 +5808,7 @@ body.light-theme .app-nav-link-active {
 html[data-theme] .app-nav-link-active::after,
 html.light-theme .app-nav-link-active::after,
 body.light-theme .app-nav-link-active::after {
-  background: var(--brand);
-  opacity: 1;
-  transform: scaleX(1);
+  display: none !important;
 }
 
 html[data-theme] .theme-toggle,
