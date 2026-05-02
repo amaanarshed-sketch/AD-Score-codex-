@@ -28,7 +28,6 @@ export default function Navbar() {
   const pathname = usePathname();
   const { configured, user, loading } = useAuth();
   const metadata = user?.user_metadata || {};
-  const avatarUrl = metadata.avatar_url || metadata.picture || "";
   const displayName = metadata.full_name || metadata.name || user?.email?.split("@")[0] || "Account";
   const fallbackInitial = displayName.charAt(0).toUpperCase();
   const links = [
@@ -71,9 +70,7 @@ export default function Navbar() {
               aria-label={user ? `Open account for ${displayName}` : "Sign in to Adnex"}
             >
               <span className="account-avatar flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full">
-                {user && avatarUrl ? (
-                  <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" />
-                ) : user ? (
+                {user ? (
                   <span className="text-xs font-black">{fallbackInitial}</span>
                 ) : (
                   <UserRound size={15} />

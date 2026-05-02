@@ -5589,6 +5589,54 @@ html[data-theme] .credit-meter__fill {
   transition: width 260ms ease;
 }
 
+/* Account and light-theme cleanup: no broken external avatar images, no harsh black UI boxes. */
+html[data-theme] .account-avatar {
+  border-color: color-mix(in srgb, var(--brand) 24%, var(--border)) !important;
+  background: var(--brand-soft) !important;
+  color: var(--brand) !important;
+  -webkit-text-fill-color: var(--brand) !important;
+}
+
+html[data-theme] .account-avatar--large {
+  background: var(--brand) !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html[data-theme] .auth-card,
+html[data-theme] .account-summary,
+html[data-theme] .setup-check-card {
+  border-color: var(--border) !important;
+  background: color-mix(in srgb, var(--surface) 94%, transparent) !important;
+  color: var(--text-primary) !important;
+  box-shadow: var(--shadow-subtle) !important;
+}
+
+html.light-theme .app-nav-link-active,
+body.light-theme .app-nav-link-active {
+  border-color: color-mix(in srgb, var(--brand) 32%, var(--border)) !important;
+  background: var(--brand) !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html.light-theme .app-nav-link-active *,
+body.light-theme .app-nav-link-active * {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+
+html.light-theme .auth-card,
+body.light-theme .auth-card,
+html.light-theme .account-summary,
+body.light-theme .account-summary,
+html.light-theme .setup-check-card,
+body.light-theme .setup-check-card {
+  border-color: var(--border) !important;
+  background: color-mix(in srgb, var(--surface-elevated) 88%, var(--surface)) !important;
+  color: var(--text-primary) !important;
+}
+
 html[data-theme] .hero-glass {
   padding-top: clamp(38px, 5.5vw, 68px) !important;
 }

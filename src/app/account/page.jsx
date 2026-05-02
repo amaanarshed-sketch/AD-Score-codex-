@@ -8,7 +8,7 @@ import Navbar from "../../components/Navbar";
 
 export default function AccountPage() {
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="app-page min-h-screen bg-slate-950 text-white">
       <Navbar />
 
       <section className="mx-auto max-w-6xl px-6 py-10">
@@ -26,7 +26,7 @@ export default function AccountPage() {
             <BillingStatus />
           </div>
 
-          <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
+          <section className="app-card rounded-xl border border-white/10 bg-white/[0.04] p-5">
             <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-400">Setup checklist</h2>
             <div className="mt-5 grid gap-4">
               {[
@@ -35,7 +35,7 @@ export default function AccountPage() {
                 [CreditCard, "Lemon Squeezy", "Add store, API, webhook secret, and Plus/Pro variant IDs to open checkout."],
                 [Database, "Credit tables", "Run the included SQL schema in Supabase before using live credits."],
               ].map(([Icon, title, copy]) => (
-                <div key={title} className="rounded-lg border border-white/10 bg-slate-950/70 p-4">
+                <div key={title} className="setup-check-card rounded-lg border border-white/10 bg-slate-950/70 p-4">
                   <p className="flex items-center gap-2 font-black text-white">
                     <Icon size={17} className="text-cyan-300" />
                     {title}
@@ -44,7 +44,7 @@ export default function AccountPage() {
                 </div>
               ))}
             </div>
-            <Link href="/pricing" className="mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
+            <Link href="/pricing" className="app-primary-action mt-5 inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
               View plans
               <ArrowRight size={16} />
             </Link>

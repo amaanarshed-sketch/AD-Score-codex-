@@ -59,21 +59,20 @@ export default function AuthCard() {
   }
 
   if (loading) {
-    return <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5 text-sm text-slate-400">Checking account...</section>;
+    return <section className="auth-card app-card rounded-xl border border-white/10 bg-white/[0.04] p-5 text-sm text-slate-400">Checking account...</section>;
   }
 
   if (user) {
     const metadata = user.user_metadata || {};
-    const avatarUrl = metadata.avatar_url || metadata.picture || "";
     const displayName = metadata.full_name || metadata.name || user.email?.split("@")[0] || "Adnex user";
     const initial = displayName.charAt(0).toUpperCase();
 
     return (
-      <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
+      <section className="auth-card app-card rounded-xl border border-white/10 bg-white/[0.04] p-5">
         <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-400">Account</h2>
-        <div className="mt-4 flex items-center gap-4 rounded-xl border border-white/10 bg-slate-950/70 p-4">
-          <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 bg-white text-xl font-black text-slate-950">
-            {avatarUrl ? <img src={avatarUrl} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : initial}
+        <div className="account-summary mt-4 flex items-center gap-4 rounded-xl border border-white/10 bg-slate-950/70 p-4">
+          <span className="account-avatar account-avatar--large flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 text-xl font-black">
+            {initial}
           </span>
           <div className="min-w-0">
             <p className="truncate text-base font-black text-white">{displayName}</p>
@@ -97,7 +96,7 @@ export default function AuthCard() {
   }
 
   return (
-    <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
+    <section className="auth-card app-card rounded-xl border border-white/10 bg-white/[0.04] p-5">
       <div className="mb-4 flex gap-2">
         {[
           ["signin", "Sign in", LogIn],
