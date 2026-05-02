@@ -5695,6 +5695,216 @@ html[data-theme] .hero-score-visual {
   }
 }
 
+/* Final design-system cleanup: consistent type, calmer nav, and coherent radii. */
+html[data-theme] body,
+html[data-theme] button,
+html[data-theme] input,
+html[data-theme] textarea,
+html[data-theme] select,
+html[data-theme] a,
+html[data-theme] h1,
+html[data-theme] h2,
+html[data-theme] h3,
+html[data-theme] h4,
+html[data-theme] p,
+html[data-theme] span,
+html[data-theme] strong,
+html[data-theme] label,
+html[data-theme] th,
+html[data-theme] td,
+html[data-theme] .font-black,
+html[data-theme] .text-6xl.font-black,
+html[data-theme] .text-5xl.font-black,
+html[data-theme] .text-4xl.font-black,
+html[data-theme] .text-3xl.font-black,
+html[data-theme] .text-2xl.font-black,
+html[data-theme] .text-xl.font-black,
+html[data-theme] .text-lg.font-black,
+html[data-theme] .rounded-full.text-xs,
+html[data-theme] .rounded-full.text-sm,
+html[data-theme] table .text-xs,
+html[data-theme] table td:first-child,
+html[data-theme] [class*="uppercase"][class*="tracking-"],
+html[data-theme] th[class*="uppercase"],
+html[data-theme] .hero-score-card__eyebrow,
+html[data-theme] .hero-score-card__label,
+html[data-theme] .hero-score-card__metric span,
+html[data-theme] .hero-score-card__insight span,
+html[data-theme] .hero-score-card__grid span,
+html[data-theme] .hero-score-orbit span,
+html[data-theme] .hero-score-card__footer,
+html[data-theme] .hero-score-card__score,
+html[data-theme] .hero-score-card__metric strong {
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+html[data-theme] [class*="uppercase"][class*="tracking-"],
+html[data-theme] th[class*="uppercase"],
+html[data-theme] .app-eyebrow,
+html[data-theme] .ui-eyebrow,
+html[data-theme] .app-pricing-eyebrow {
+  letter-spacing: 0.13em !important;
+  font-size: 0.72rem !important;
+  font-weight: 820 !important;
+}
+
+html[data-theme] .hero-title__before {
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif !important;
+  font-style: italic;
+  font-weight: 860;
+}
+
+html[data-theme] .app-nav {
+  width: 100%;
+  border-bottom: 1px solid var(--border) !important;
+  background: color-mix(in srgb, var(--background) 84%, transparent) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] .app-nav-inner {
+  width: 100%;
+  max-width: none !important;
+  margin: 0 auto;
+}
+
+html[data-theme] .app-nav-controls {
+  justify-content: flex-end;
+}
+
+html[data-theme] .app-nav-link {
+  position: relative;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] .app-nav-link::after {
+  content: "";
+  position: absolute;
+  left: 0.55rem;
+  right: 0.55rem;
+  bottom: 0.25rem;
+  height: 2px;
+  border-radius: 999px;
+  background: transparent;
+  transform: scaleX(0.58);
+  opacity: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+html[data-theme] .app-nav-link:hover {
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+html[data-theme] .app-nav-link:hover::after {
+  background: color-mix(in srgb, var(--brand) 28%, transparent);
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+html[data-theme] .app-nav-link-active,
+html.light-theme .app-nav-link-active,
+body.light-theme .app-nav-link-active {
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+html[data-theme] .app-nav-link-active::after,
+html.light-theme .app-nav-link-active::after,
+body.light-theme .app-nav-link-active::after {
+  background: var(--brand);
+  opacity: 1;
+  transform: scaleX(1);
+}
+
+html[data-theme] .theme-toggle,
+html[data-theme] .account-chip {
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: transparent !important;
+  color: var(--text-secondary) !important;
+  -webkit-text-fill-color: var(--text-secondary) !important;
+  box-shadow: none !important;
+}
+
+html[data-theme] .theme-toggle:hover,
+html[data-theme] .account-chip:hover {
+  background: var(--brand-soft) !important;
+  color: var(--text-primary) !important;
+  -webkit-text-fill-color: var(--text-primary) !important;
+}
+
+html[data-theme] .glass-pill,
+html[data-theme] .platform-chip,
+html[data-theme] .app-status-pill,
+html[data-theme] .verdict-badge,
+html[data-theme] .rounded-full.bg-white.text-black,
+html[data-theme] .app-pricing-eyebrow {
+  border-radius: 999px !important;
+}
+
+html[data-theme] .depth-card,
+html[data-theme] .bubble-card,
+html[data-theme] .premium-panel,
+html[data-theme] .pricing-plan-card,
+html[data-theme] .pricing-note,
+html[data-theme] .app-card,
+html[data-theme] .workbench-card,
+html[data-theme] .ui-card,
+html[data-theme] .auth-card,
+html[data-theme] .account-summary,
+html[data-theme] .setup-check-card {
+  border-radius: 20px !important;
+}
+
+html[data-theme] .site-shell .rounded-lg,
+html[data-theme] .site-shell .rounded-xl,
+html[data-theme] .site-shell .rounded-2xl,
+html[data-theme] .app-page .rounded-lg,
+html[data-theme] .app-page .rounded-xl,
+html[data-theme] .app-page .rounded-2xl {
+  border-radius: 16px !important;
+}
+
+html[data-theme] .site-shell .depth-card,
+html[data-theme] .site-shell .bubble-card,
+html[data-theme] .app-page .pricing-plan-card,
+html[data-theme] .app-page .pricing-note,
+html[data-theme] .app-page .app-card {
+  border-radius: 20px !important;
+}
+
+@media (max-width: 760px) {
+  html[data-theme] .app-nav-inner {
+    gap: 12px;
+    padding-inline: 12px !important;
+  }
+
+  html[data-theme] .app-brand {
+    font-size: 1.05rem !important;
+  }
+
+  html[data-theme] .app-nav-controls {
+    gap: 8px;
+  }
+
+  html[data-theme] .app-nav-links {
+    gap: 8px;
+  }
+
+  html[data-theme] .app-nav-link {
+    padding-inline: 0.25rem !important;
+    font-size: 0.82rem !important;
+  }
+}
+
 @media (max-width: 900px) {
   html[data-theme] .adnex-scene {
     min-height: 0;

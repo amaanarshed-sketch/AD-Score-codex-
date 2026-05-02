@@ -40,7 +40,7 @@ export default function Navbar() {
   function navLinkClass(href, extra = "") {
     const isActive = pathname === href || pathname?.startsWith(`${href}/`);
     return [
-      "app-nav-link nav-link rounded-lg px-3 py-2 text-sm font-semibold transition",
+      "app-nav-link nav-link px-2.5 py-2 text-sm font-semibold transition",
       isActive ? "app-nav-link-active" : "",
       extra,
     ].filter(Boolean).join(" ");
@@ -48,7 +48,7 @@ export default function Navbar() {
 
   return (
     <header className="app-nav">
-      <div className="app-container flex min-h-[72px] items-center justify-between gap-3 px-3 py-3 sm:px-5">
+      <div className="app-nav-inner flex min-h-[72px] items-center justify-between gap-5 px-4 py-3 sm:px-6">
         <Link href="/" className="app-logo-link flex shrink-0 items-center gap-3">
           <span className="flex h-10 w-10 items-center justify-center">
             <AdnexMark className="h-10 w-10" />
@@ -56,29 +56,33 @@ export default function Navbar() {
           <span className="app-brand text-xl font-black tracking-[-0.04em]">ADNex</span>
         </Link>
 
-        <nav className="nav-scroll flex min-w-0 items-center gap-1 overflow-x-auto sm:gap-2">
-          {links.map((link) => (
-            <Link key={link.href} href={link.href} className={navLinkClass(link.href, link.className)}>
-              {link.label}
-            </Link>
-          ))}
-          <ThemeToggle />
-          {configured && !loading ? (
-            <Link
-              href="/account"
-              className="account-chip ml-1 inline-flex h-10 items-center gap-2 rounded-lg px-2.5 py-1 text-sm font-bold"
-              aria-label={user ? `Open account for ${displayName}` : "Sign in to Adnex"}
-            >
-              <span className="account-avatar flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full">
-                {user ? (
-                  <span className="text-xs font-black">{fallbackInitial}</span>
-                ) : (
-                  <UserRound size={15} />
-                )}
-              </span>
-              <span className="hidden max-w-[110px] truncate pr-1 sm:inline">{user ? displayName : "Sign in"}</span>
-            </Link>
-          ) : null}
+        <nav className="app-nav-controls nav-scroll flex min-w-0 items-center gap-3 overflow-x-auto">
+          <div className="app-nav-links flex items-center gap-3">
+            {links.map((link) => (
+              <Link key={link.href} href={link.href} className={navLinkClass(link.href, link.className)}>
+                {link.label}
+              </Link>
+            ))}
+          </div>
+          <div className="app-nav-actions flex shrink-0 items-center gap-2">
+            <ThemeToggle />
+            {configured && !loading ? (
+              <Link
+                href="/account"
+                className="account-chip inline-flex h-10 items-center gap-2 px-1.5 py-1 text-sm font-bold"
+                aria-label={user ? `Open account for ${displayName}` : "Sign in to Adnex"}
+              >
+                <span className="account-avatar flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full">
+                  {user ? (
+                    <span className="text-xs font-black">{fallbackInitial}</span>
+                  ) : (
+                    <UserRound size={15} />
+                  )}
+                </span>
+                <span className="hidden max-w-[110px] truncate pr-1 lg:inline">{user ? displayName : "Sign in"}</span>
+              </Link>
+            ) : null}
+          </div>
         </nav>
       </div>
     </header>
