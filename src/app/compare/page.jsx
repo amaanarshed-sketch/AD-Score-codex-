@@ -17,21 +17,19 @@ const scoreMax = {
   platform_fit: 15,
   objective_fit: 15,
   audience_fit: 15,
-  hook: 15,
+  hook_strength: 20,
   creative_strength: 15,
-  clarity: 10,
-  offer: 10,
-  cta: 5,
+  offer_clarity: 10,
+  cta_strength: 10,
 };
 const scoreLabels = {
   platform_fit: "Platform Fit",
   objective_fit: "Objective Fit",
   audience_fit: "Audience Fit",
-  hook: "Hook",
+  hook_strength: "Hook Strength",
   creative_strength: "Creative Strength",
-  clarity: "Clarity",
-  offer: "Offer",
-  cta: "CTA",
+  offer_clarity: "Offer Clarity",
+  cta_strength: "CTA Strength",
 };
 
 function createAd(index) {
@@ -261,7 +259,7 @@ export default function ComparePage() {
                             <td className="py-3 pr-4 font-black text-cyan-300">#{rank.rank}</td>
                             <td className="py-3 pr-4 font-bold text-white">Ad {rank.ad_id}</td>
                             <td className="py-3 pr-4 font-bold">{rank.score}/100</td>
-                            <td className={`py-3 pr-4 font-bold ${actionStyle(ad?.recommended_action)}`}>{ad?.recommended_action}</td>
+                            <td className={`py-3 pr-4 font-bold ${actionStyle(ad?.verdict || ad?.recommended_action)}`}>{ad?.verdict || ad?.recommended_action}</td>
                             <td className="py-3 pr-4 text-slate-300">{ad?.confidence}</td>
                             <td className="py-3 pr-4 text-slate-300">{ad?.attention_potential || "N/A"}</td>
                             <td className="py-3 pr-4 text-slate-300">{ad?.conversion_potential || "N/A"}</td>

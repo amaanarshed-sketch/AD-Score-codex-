@@ -43,7 +43,8 @@ Run `supabase/schema.sql` in Supabase before enabling live auth, credits, or Lem
 ## AI behavior
 
 - Real AI calls use the OpenAI Responses API when `OPENAI_API_KEY` is set.
-- The system prompt forces JSON-only, concise, non-chatbot outputs.
+- The proprietary ADNex scoring prompts live in `src/lib/prompts/adnex-scoring-engine.ts`.
+- The prompt system forces JSON-only, concise, non-chatbot outputs.
 - Ad copy and context are trimmed before sending to control token usage.
 - Images are compressed client-side before vision analysis.
 - Video Hook Audit uses up to 4 sampled key frames only; full video, audio, and transcripts are not analyzed in v1.

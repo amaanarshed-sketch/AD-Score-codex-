@@ -50,7 +50,7 @@ export default function DashboardPage() {
         type: "single",
         title: storedAd.adCopy?.slice(0, 72) || storedAd.creativeFilename || storedAd.postLink || "Single ad analysis",
         score: data.overall_score,
-        action: data.recommended_action,
+        action: data.verdict || data.recommended_action,
         confidence: data.confidence,
         platform,
         objective,

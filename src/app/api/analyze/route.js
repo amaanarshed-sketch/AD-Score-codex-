@@ -1,79 +1,17 @@
 import { NextResponse } from "next/server";
 import { authorizeAnalysisRequest, refundUsage, reserveUsage } from "../../../lib/billingServer";
-
-const AD_DECISION_SYSTEM_PROMPT = `You are an AI ad performance evaluation engine.
-
-You analyze ads and return structured, concise, and actionable outputs.
-
-You are NOT a chatbot. Do not explain. Do not add extra text.
-
-CRITICAL RULES:
-
-1. OUTPUT FORMAT
-- Always return valid JSON only
-- No markdown
-- No extra text before or after JSON
-- Must match required schema exactly
-
-2. LENGTH CONTROL
-- Keep all responses extremely concise
-- Each feedback field: max 1–2 sentences
-- Avoid repetition
-- Avoid filler language
-
-3. STYLE
-- Direct, analytical, and specific
-- Do NOT use generic phrases like:
-  'this is engaging', 'this looks good', 'this could be improved'
-- Always explain what is wrong and why
-
-4. SCORING
-- Be strict and realistic
-- Do not inflate scores
-- Base scoring on real marketing performance principles
-
-5. PRIORITY
-Focus only on:
-- conversion potential
-- clarity
-- strength of hook
-- effectiveness of offer
-- CTA quality
-
-Ignore branding fluff.
-
-6. VIDEO HANDLING
-If video frames are provided:
-- Analyze sampled key frames only
-- Do NOT claim to analyze motion, audio, transcript, or full narrative
-- Focus on first-frame strength, scroll-stop potential, visual clarity, offer visibility, and CTA visibility
-- Separate attention potential from conversion potential
-
-7. IMPROVEMENTS
-- Provide 3–5 improvements
-- Each under 12 words
-- Must be actionable
-
-8. HOOK REWRITES
-- Provide exactly 3 rewritten hooks
-- Keep them short, direct, and scroll-stopping
-
-9. DECISION OUTPUT
-Always include a clear decision:
-- 'Run'
-- 'Revise'
-- 'Reject'
-
-10. TOKEN EFFICIENCY
-- Use minimal words
-- Avoid repeating ideas
-- Avoid long explanations
-
-Your goal:
-Deliver maximum decision value with minimal tokens.`;
+import {
+  buildCompareAdsUserPrompt,
+  buildSingleAdUserPrompt,
+  buildVideoHookAuditUserPrompt,
+  compareAdsSystemPrompt,
+  singleAdSystemPrompt,
+  videoHookAuditSystemPrompt,
+} from "../../../lib/prompts/adnex-scoring-engine";
 
 const SINGLE_OUTPUT_TOKENS = 500;
-const COMPARE_OUTPUT_TOKENS = 600;
+const VIDEO_OUTPUT_TOKENS = 600;
+const COMPARE_OUTPUT_TOKENS = 700;
 const TEXT_LIMIT = 1500;
 const CONTEXT_LIMIT = 300;
 const LINK_LIMIT = 500;
@@ -86,19 +24,212 @@ const SCORE_MAX = {
   platform_fit: 15,
   objective_fit: 15,
   audience_fit: 15,
-  hook: 15,
+  hook_strength: 20,
   creative_strength: 15,
-  clarity: 10,
-  offer: 10,
-  cta: 5,
+  offer_clarity: 10,
+  cta_strength: 10,
 };
 
 const scoreKeys = Object.keys(SCORE_MAX);
-const angles = ["Problem-solution", "Social proof", "Offer-driven", "Curiosity", "Educational", "UGC-style", "Brand awareness", "Other"];
 const actions = ["Run", "Revise", "Reject"];
 const confidenceLevels = ["Low", "Medium", "High"];
 const videoPotentials = ["Low", "Medium", "High"];
 const videoVerdicts = ["Strong hook, weak conversion", "Weak scroll-stop", "Strong overall", "Revise opening", "Improve offer clarity"];
+const performancePatterns = ["Strong overall", "Strong attention, weak conversion", "Weak attention, strong offer", "Weak hook", "Unclear offer", "Weak CTA", "Poor audience fit", "Reject before spending"];
+
+const scoreSectionSchema = () => ({
+  type: "object",
+  additionalProperties: false,
+  required: ["score", "max", "feedback"],
+  properties: {
+    score: { type: "number" },
+    max: { type: "number" },
+    feedback: { type: "string" },
+  },
+});
+
+const videoSectionSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["score", "feedback"],
+  properties: {
+    score: { type: "number" },
+    feedback: { type: "string" },
+  },
+};
+
+const videoHookAuditSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "analysis_mode",
+    "frame_count",
+    "hook_strength",
+    "visual_clarity",
+    "offer_visibility",
+    "creative_structure",
+    "cta_visibility",
+    "attention_potential",
+    "conversion_potential",
+    "video_verdict",
+    "limitations",
+  ],
+  properties: {
+    analysis_mode: { type: "string", enum: ["sampled_key_frames", "limited_video_context", "none"] },
+    frame_count: { type: "number" },
+    hook_strength: videoSectionSchema,
+    visual_clarity: videoSectionSchema,
+    offer_visibility: videoSectionSchema,
+    creative_structure: videoSectionSchema,
+    cta_visibility: videoSectionSchema,
+    attention_potential: { type: "string", enum: videoPotentials },
+    conversion_potential: { type: "string", enum: videoPotentials },
+    video_verdict: { type: "string" },
+    limitations: { type: "string" },
+  },
+};
+
+const singleAdSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "overall_score",
+    "verdict",
+    "confidence",
+    "performance_pattern",
+    "attention_potential",
+    "conversion_potential",
+    "scores",
+    "key_strengths",
+    "critical_issues",
+    "improvements",
+    "hook_rewrites",
+    "final_verdict",
+  ],
+  properties: {
+    overall_score: { type: "number" },
+    verdict: { type: "string", enum: actions },
+    confidence: { type: "string", enum: confidenceLevels },
+    performance_pattern: { type: "string", enum: performancePatterns },
+    attention_potential: { type: "string", enum: videoPotentials },
+    conversion_potential: { type: "string", enum: videoPotentials },
+    scores: {
+      type: "object",
+      additionalProperties: false,
+      required: scoreKeys,
+      properties: {
+        platform_fit: scoreSectionSchema(),
+        objective_fit: scoreSectionSchema(),
+        audience_fit: scoreSectionSchema(),
+        hook_strength: scoreSectionSchema(),
+        creative_strength: scoreSectionSchema(),
+        offer_clarity: scoreSectionSchema(),
+        cta_strength: scoreSectionSchema(),
+      },
+    },
+    key_strengths: { type: "array", items: { type: "string" } },
+    critical_issues: { type: "array", items: { type: "string" } },
+    improvements: { type: "array", items: { type: "string" } },
+    hook_rewrites: { type: "array", items: { type: "string" } },
+    final_verdict: { type: "string" },
+  },
+};
+
+const singleAdWithVideoSchema = {
+  ...singleAdSchema,
+  required: [...singleAdSchema.required, "video_hook_audit"],
+  properties: {
+    ...singleAdSchema.properties,
+    video_hook_audit: videoHookAuditSchema,
+  },
+};
+
+const compareAdsSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["campaign_context", "ads", "ranking", "winner", "final_recommendation", "test_plan"],
+  properties: {
+    campaign_context: {
+      type: "object",
+      additionalProperties: false,
+      required: ["platform", "objective", "target_audience"],
+      properties: {
+        platform: { type: "string" },
+        objective: { type: "string" },
+        target_audience: { type: "string" },
+      },
+    },
+    ads: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["ad_id", "overall_score", "verdict", "confidence", "performance_pattern", "attention_potential", "conversion_potential", "strongest_point", "weakest_point", "scores", "what_to_keep", "what_to_fix", "suggested_hook_rewrite", "creative_recommendation"],
+        properties: {
+          ad_id: { type: "string" },
+          overall_score: { type: "number" },
+          verdict: { type: "string", enum: actions },
+          confidence: { type: "string", enum: confidenceLevels },
+          performance_pattern: { type: "string" },
+          attention_potential: { type: "string", enum: videoPotentials },
+          conversion_potential: { type: "string", enum: videoPotentials },
+          strongest_point: { type: "string" },
+          weakest_point: { type: "string" },
+          scores: {
+            type: "object",
+            additionalProperties: false,
+            required: scoreKeys,
+            properties: Object.fromEntries(scoreKeys.map((key) => [key, { type: "number" }])),
+          },
+          what_to_keep: { type: "array", items: { type: "string" } },
+          what_to_fix: { type: "array", items: { type: "string" } },
+          suggested_hook_rewrite: { type: "string" },
+          creative_recommendation: { type: "string" },
+        },
+      },
+    },
+    ranking: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["rank", "ad_id", "score", "reason"],
+        properties: {
+          rank: { type: "number" },
+          ad_id: { type: "string" },
+          score: { type: "number" },
+          reason: { type: "string" },
+        },
+      },
+    },
+    winner: {
+      type: "object",
+      additionalProperties: false,
+      required: ["ad_id", "score", "why_it_won", "remaining_risk"],
+      properties: {
+        ad_id: { type: "string" },
+        score: { type: "number" },
+        why_it_won: { type: "string" },
+        remaining_risk: { type: "string" },
+      },
+    },
+    final_recommendation: { type: "string" },
+    test_plan: {
+      type: "object",
+      additionalProperties: false,
+      required: ["primary_ad", "backup_ad", "testing_note"],
+      properties: {
+        primary_ad: { type: "string" },
+        backup_ad: { type: "string" },
+        testing_note: { type: "string" },
+      },
+    },
+  },
+};
+
+function jsonSchemaFormat(name, schema) {
+  return { type: "json_schema", name, strict: true, schema };
+}
 
 function compactText(value = "", limit = TEXT_LIMIT) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, limit);
@@ -134,37 +265,6 @@ function hasInput(ad) {
   return Boolean(ad.adCopy || ad.postLink || ad.creativeType !== "none");
 }
 
-function creativeLine(ad) {
-  if (ad.creativeType === "video") return `Video Hook Audit: ${ad.creativeFilename || "unnamed"}, ${ad.videoDuration || "unknown"}s, ${ad.videoFrames.length} sampled key frames. Analyze opening-frame attention and conversion support only; no motion/audio/transcript/full-video claims.`;
-  if (ad.creativeType === "image") return `Image creative uploaded: ${ad.creativeFilename || "unnamed file"}. Creative preview exists: ${ad.hasCreativePreview ? "yes" : "no"}.`;
-  return "No creative uploaded.";
-}
-
-function buildSinglePrompt(context, ad) {
-  return `Task: score one ad. Return JSON only.
-Context: platform=${context.platform}; objective=${context.objective}; audience=${context.audience || "Not provided"}.
-Input: copy="${ad.adCopy || "Not provided"}"; link="${ad.postLink || "Not provided"}"; link_platform="${ad.detectedPlatform || "Not detected"}"; creative=${ad.creativeType}; file="${ad.creativeFilename || "none"}"; video_seconds=${ad.videoDuration || 0}; video_frames=${ad.videoFrames.length}.
-Video rule: if frames are attached, you are analyzing sampled key frames from a video ad, not the full video. Do not claim to analyze motion, audio, transcript, or full narrative. Focus on first-frame strength, scroll-stop potential, visual clarity, offer visibility, CTA visibility, and whether the opening is likely to earn attention.
-Schema keys: overall_score, confidence, recommended_action, input_summary, scores, detected_angle, key_strengths, critical_issues, improvements, hook_rewrites, creative_recommendations, video_hook_audit, final_verdict.
-Scores max: platform_fit 15, objective_fit 15, audience_fit 15, hook 15, creative_strength 15, clarity 10, offer 10, cta 5. Overall totals 100.
-Arrays: key_strengths 1-3, critical_issues 1-3, improvements 3-5 under 12 words, hook_rewrites exactly 3, creative_recommendations 1-4.
-Use existing UI shape: each scores item is {score,max,feedback}; detected_angle is {angle,explanation}; video_hook_audit includes analysis_mode, frame_count, hook_strength, visual_clarity, offer_visibility, creative_structure, cta_visibility, attention_potential, conversion_potential, video_verdict, limitations.
-Video Hook Audit score max: hook_strength 30, visual_clarity 20, offer_visibility 20, creative_structure 15, cta_visibility 15.
-Video recommendations must focus on first 1-3 seconds, visual hook, text overlay, offer visibility, CTA visibility, clutter, and readability. Do not mention audio/transcript.`;
-}
-
-function buildComparePrompt(context, ads) {
-  return `Task: compare ads for one campaign. Return JSON only.
-Context: platform=${context.platform}; objective=${context.objective}; audience=${context.audience || "Not provided"}.
-Ads:
-${ads.map((ad) => `${ad.ad_id}: copy="${ad.adCopy || "Not provided"}"; link="${ad.postLink || "Not provided"}"; link_platform="${ad.detectedPlatform || "Not detected"}"; creative=${creativeLine(ad)}`).join("\n")}
-Schema keys: campaign_context, ads, ranking, winner, final_recommendation, test_plan.
-Per ad: ad_id, overall_score, confidence, recommended_action, strongest_point, weakest_point, scores, what_to_keep, what_to_fix, suggested_hook_rewrite, creative_recommendation, attention_potential, conversion_potential, video_verdict.
-Scores max: platform_fit 15, objective_fit 15, audience_fit 15, hook 15, creative_strength 15, clarity 10, offer 10, cta 5.
-Video rule: for video ads, compare attention potential separately from conversion potential. Do not pick a winner only because its hook is stronger if offer or CTA clarity is weak.
-Rules: within 5 points => A/B test. All below 60 => revise all. Flag low-confidence incomplete inputs. Mention weak CTA/offer risk. If frames are attached, analyze sampled key frames only; no motion/audio/transcript/full-video claims.`;
-}
-
 function inferConfidence(context, ad) {
   let points = 0;
   if (context.audience.split(/\s+/).filter(Boolean).length >= 5) points += 1;
@@ -195,6 +295,30 @@ function confidencePenalty(confidence) {
   return 0;
 }
 
+function potentialFromScore(score) {
+  if (score >= 75) return "High";
+  if (score >= 55) return "Medium";
+  return "Low";
+}
+
+function performancePatternFrom(scores, overall = 0) {
+  const hookPercent = (scores.hook_strength?.score || 0) / SCORE_MAX.hook_strength;
+  const offerPercent = (scores.offer_clarity?.score || 0) / SCORE_MAX.offer_clarity;
+  const ctaPercent = (scores.cta_strength?.score || 0) / SCORE_MAX.cta_strength;
+  const audiencePercent = (scores.audience_fit?.score || 0) / SCORE_MAX.audience_fit;
+  const attentionStrong = hookPercent >= 0.75 && (scores.creative_strength?.score || 0) / SCORE_MAX.creative_strength >= 0.7;
+  const conversionStrong = offerPercent >= 0.75 && ctaPercent >= 0.75;
+  if (overall < 55) return "Reject before spending";
+  if (audiencePercent < 0.5) return "Poor audience fit";
+  if (hookPercent < 0.5) return "Weak hook";
+  if (offerPercent < 0.55) return "Unclear offer";
+  if (ctaPercent < 0.55) return "Weak CTA";
+  if (attentionStrong && !conversionStrong) return "Strong attention, weak conversion";
+  if (!attentionStrong && conversionStrong) return "Weak attention, strong offer";
+  if (overall >= 80 && conversionStrong) return "Strong overall";
+  return "Unclear offer";
+}
+
 function mockSingle(context, ad) {
   const hasCopy = Boolean(ad.adCopy);
   const hasLinkValue = Boolean(ad.postLink);
@@ -209,36 +333,35 @@ function mockSingle(context, ad) {
   const videoHookAudit = buildVideoHookAudit(context, ad, { hasCopy, hasCTA, angle });
 
   const scores = {
-    platform_fit: section(9 + (hasCreative ? 2 : 0) + (context.platform === "TikTok" && copy.length < 220 ? 2 : 0), "Platform fit is limited by how native the ad feels for the selected placement and feed behavior."),
-    objective_fit: section(8 + (hasCTA ? 3 : 0) + (context.objective === "Awareness" ? 1 : 0), `For ${context.objective}, the ad needs a clearer bridge between the message and the intended action.`),
-    audience_fit: section(context.audience ? 11 : 5, context.audience ? "The audience context is usable, but the ad should call out their exact buying moment earlier." : "Audience fit is weak because the target audience was not specific enough."),
-    hook: section((copy ? 8 : 3) + (/\?/.test(copy) ? 3 : 0) + (angle !== "Other" ? 2 : 0), hasCopy ? "The hook has a direction, but it needs sharper tension in the first line." : "No copy was provided, so hook quality can only be inferred from creative/link context."),
-    creative_strength: section(hasCreative ? (isVideo ? 11 : 10) : 4, hasCreative ? (isVideo ? "Video Hook Audit checks sampled key frames for scroll-stop potential, visual clarity, offer visibility, and CTA visibility." : "Image preview exists; check visual hierarchy, product visibility, and contrast before launch.") : "No creative was uploaded, so visual stopping power cannot be judged."),
-    clarity: section(hasCopy ? 7 + (copy.length > 80 ? 1 : 0) : 4, hasCopy ? "The message is understandable, but the outcome could be more concrete." : "Without copy, clarity depends too much on the creative or post link."),
-    offer: section(5 + (hasNumber ? 2 : 0), hasNumber ? "The offer has a concrete detail, but it needs stronger urgency or proof." : "The offer lacks a specific number, deadline, mechanism, or proof point."),
-    cta: section(hasCTA ? 4 : 2, hasCTA ? "The CTA is present, but should repeat the promised outcome." : "The CTA is weak or missing, which can reduce response."),
+    platform_fit: section(9 + (hasCreative ? 2 : 0) + (context.platform === "TikTok" && copy.length < 220 ? 2 : 0), 15, "Platform fit is limited by how native the ad feels for the selected placement and feed behavior."),
+    objective_fit: section(8 + (hasCTA ? 3 : 0) + (context.objective === "Awareness" ? 1 : 0), 15, `For ${context.objective}, the ad needs a clearer bridge between the message and the intended action.`),
+    audience_fit: section(context.audience ? 11 : 5, 15, context.audience ? "The audience context is usable, but the ad should call out their exact buying moment earlier." : "Audience fit is weak because the target audience was not specific enough."),
+    hook_strength: section((copy ? 10 : 4) + (/\?/.test(copy) ? 4 : 0) + (angle !== "Other" ? 3 : 0), 20, hasCopy ? "The hook has a direction, but it needs sharper tension in the first line." : "No copy was provided, so hook strength can only be inferred from creative/link context."),
+    creative_strength: section(hasCreative ? (isVideo ? 11 : 10) : 4, 15, hasCreative ? (isVideo ? "Video Hook Audit checks sampled key frames for scroll-stop potential, visual clarity, offer visibility, and CTA visibility." : "Image preview exists; check visual hierarchy, product visibility, and contrast before launch.") : "No creative was uploaded, so visual stopping power cannot be judged."),
+    offer_clarity: section(5 + (hasNumber ? 2 : 0), 10, hasNumber ? "The offer has a concrete detail, but it needs stronger urgency or proof." : "The offer lacks a specific number, deadline, mechanism, or proof point."),
+    cta_strength: section(hasCTA ? 7 : 3, 10, hasCTA ? "The CTA is present, but should repeat the promised outcome." : "The CTA is weak or missing, which can reduce response."),
   };
 
-  function section(score, feedback) {
-    return { score: Math.max(0, Math.min(15, score)), feedback };
+  function section(score, max, feedback) {
+    return { score: Math.max(0, Math.min(max, score)), max, feedback };
   }
-  scores.clarity.score = Math.min(10, scores.clarity.score);
-  scores.offer.score = Math.min(10, scores.offer.score);
-  scores.cta.score = Math.min(5, scores.cta.score);
 
   const total = totalScores(scores) - confidencePenalty(confidence);
-  const recommended_action = total >= 78 && confidence !== "Low" ? "Run" : total >= 55 ? "Revise" : "Reject";
+  const hasMajorWeakness = scores.hook_strength.score < 10 || scores.offer_clarity.score < 6 || scores.cta_strength.score < 6;
+  const verdict = total >= 80 && !hasMajorWeakness && confidence !== "Low" ? "Run" : total >= 60 ? "Revise" : "Reject";
+  const performance_pattern = performancePatternFrom(scores, total);
+  const attention_potential = potentialFromScore(((scores.hook_strength.score / 20) * 60) + ((scores.creative_strength.score / 15) * 40));
+  const conversion_potential = potentialFromScore(((scores.offer_clarity.score / 10) * 50) + ((scores.cta_strength.score / 10) * 50));
 
   return normalizeSingle({
     overall_score: total,
     confidence,
-    recommended_action,
+    verdict,
+    performance_pattern,
+    attention_potential,
+    conversion_potential,
     input_summary: { has_copy: hasCopy, has_creative: hasCreative, creative_type: ad.creativeType, has_link: hasLinkValue },
     scores,
-    detected_angle: {
-      angle,
-      explanation: `${angle}: The ad ${angle === "Other" ? "does not strongly commit to one persuasion angle yet" : "leans on this pattern based on its opening and offer structure"}.`,
-    },
     key_strengths: [
       hasCopy ? "The ad has enough copy to judge the core message." : "The creative/link can still be used as context for a basic review.",
       hasCreative ? "Creative preview gives a starting point for visual recommendations." : "The analysis can focus tightly on copy and offer clarity.",
@@ -246,8 +369,8 @@ function mockSingle(context, ad) {
     ],
     critical_issues: [
       ...(confidence === "Low" ? ["Low confidence because copy, creative, audience, or link context is incomplete."] : []),
-      ...(scores.cta.score < 4 ? ["CTA is too weak for a performance campaign."] : []),
-      ...(scores.offer.score < 7 ? ["Offer is not concrete enough to make the click feel urgent."] : []),
+      ...(scores.cta_strength.score < 6 ? ["CTA is too weak for a performance campaign."] : []),
+      ...(scores.offer_clarity.score < 7 ? ["Offer is not concrete enough to make the click feel urgent."] : []),
     ],
     improvements: [
       `Make the first line specific to ${context.audience || "the target audience"}.`,
@@ -266,7 +389,7 @@ function mockSingle(context, ad) {
       "Show a face/person if trust or relatability is important for the audience.",
     ],
     video_hook_audit: videoHookAudit,
-    final_verdict: recommended_action === "Run" ? "Run this, but monitor CTA performance closely." : recommended_action === "Revise" ? "Revise before running. The idea is usable, but the execution is not ready to scale." : "Do not run this yet. The ad needs a clearer hook, offer, or creative before spending budget.",
+    final_verdict: verdict === "Run" ? "Run this, but monitor CTA performance closely." : verdict === "Revise" ? "Revise before running. The idea is usable, but the execution is not ready to scale." : "Do not run this yet. The ad needs a clearer hook, offer, or creative before spending budget.",
   }, context, ad);
 }
 
@@ -333,10 +456,19 @@ function totalScores(scores) {
   return scoreKeys.reduce((sum, key) => sum + Number(scores[key]?.score || 0), 0);
 }
 
+function scoreAlias(value = {}, key) {
+  const aliases = {
+    hook_strength: "hook",
+    offer_clarity: "offer",
+    cta_strength: "cta",
+  };
+  return value.scores?.[key] || value.scores?.[aliases[key]] || {};
+}
+
 function normalizeSingle(value = {}, context = {}, ad = {}) {
   const scores = {};
   for (const key of scoreKeys) {
-    const raw = value.scores?.[key] || {};
+    const raw = scoreAlias(value, key);
     scores[key] = {
       score: Math.max(0, Math.min(SCORE_MAX[key], Number(raw.score || 0))),
       max: SCORE_MAX[key],
@@ -344,12 +476,17 @@ function normalizeSingle(value = {}, context = {}, ad = {}) {
     };
   }
   const overall = Math.max(0, Math.min(100, Number(value.overall_score || totalScores(scores))));
-  const action = actions.includes(value.recommended_action) ? value.recommended_action : overall >= 78 ? "Run" : overall >= 55 ? "Revise" : "Reject";
-  const angle = angles.includes(value.detected_angle?.angle) ? value.detected_angle.angle : detectAngle(ad.adCopy || "", ad.creativeType || "none");
+  const hasMajorWeakness = scores.hook_strength.score < 10 || scores.offer_clarity.score < 6 || scores.cta_strength.score < 6;
+  const verdict = actions.includes(value.verdict) ? value.verdict : actions.includes(value.recommended_action) ? value.recommended_action : overall >= 80 && !hasMajorWeakness ? "Run" : overall >= 60 ? "Revise" : "Reject";
+  const performance_pattern = performancePatterns.includes(value.performance_pattern) ? value.performance_pattern : performancePatternFrom(scores, overall);
   return {
     overall_score: overall,
+    verdict,
+    recommended_action: verdict,
     confidence: confidenceLevels.includes(value.confidence) ? value.confidence : inferConfidence(context, ad),
-    recommended_action: action,
+    performance_pattern,
+    attention_potential: videoPotentials.includes(value.attention_potential) ? value.attention_potential : potentialFromScore(((scores.hook_strength.score / 20) * 60) + ((scores.creative_strength.score / 15) * 40)),
+    conversion_potential: videoPotentials.includes(value.conversion_potential) ? value.conversion_potential : potentialFromScore(((scores.offer_clarity.score / 10) * 50) + ((scores.cta_strength.score / 10) * 50)),
     input_summary: {
       has_copy: Boolean(value.input_summary?.has_copy ?? ad.adCopy),
       has_creative: Boolean(value.input_summary?.has_creative ?? ad.creativeType !== "none"),
@@ -357,14 +494,13 @@ function normalizeSingle(value = {}, context = {}, ad = {}) {
       has_link: Boolean(value.input_summary?.has_link ?? ad.postLink),
     },
     scores,
-    detected_angle: { angle, explanation: String(value.detected_angle?.explanation || `${angle}: inferred from the ad copy and supplied context.`) },
     key_strengths: shortArray(value.key_strengths, ["Clear enough to score."], { min: 1, max: 3 }),
     critical_issues: shortArray(value.critical_issues, ["Hook, offer, or CTA needs sharpening."], { min: 1, max: 3 }),
     improvements: shortArray(value.improvements, ["Clarify the hook.", "Strengthen the offer.", "Make CTA direct."], { min: 3, max: 5 }),
     hook_rewrites: shortArray(value.hook_rewrites, ["Stop wasting budget on weak ads.", "Know before you spend.", "Fix the ad before launch."], { min: 3, max: 3 }),
     creative_recommendations: shortArray(value.creative_recommendations, [ad.creativeType === "video" ? "Improve first-frame clarity." : "Improve visual hierarchy."], { min: 1, max: 4 }),
     video_hook_audit: normalizeVideoHookAudit(value.video_hook_audit || value.video_analysis, context, ad),
-    final_verdict: String(value.final_verdict || `${action} this ad based on the current score and confidence.`),
+    final_verdict: String(value.final_verdict || `${verdict} this ad based on the current score and confidence.`),
   };
 }
 
@@ -461,18 +597,18 @@ function extractResponseText(data = {}) {
   return chunks.join("");
 }
 
-async function callOpenAI(content, maxOutputTokens, mode = "text") {
+async function callOpenAI(content, { maxOutputTokens, mode = "text", instructions, responseFormat }) {
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
     headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}`, "content-type": "application/json" },
     body: JSON.stringify({
       model: openAiModel(mode),
-      instructions: AD_DECISION_SYSTEM_PROMPT,
+      instructions,
       input: [{ role: "user", content }],
       temperature: 0.2,
       top_p: 1,
       max_output_tokens: maxOutputTokens,
-      text: { format: { type: "json_object" } },
+      text: { format: responseFormat },
       store: false,
     }),
   });
@@ -484,7 +620,11 @@ async function callOpenAI(content, maxOutputTokens, mode = "text") {
 }
 
 async function analyzeWithOpenAI(context, ad, allowImageAnalysis = false) {
-  const content = [{ type: "input_text", text: buildSinglePrompt(context, ad) }];
+  const hasVideoFrames = allowImageAnalysis && ad.creativeType === "video" && ad.videoFrames?.length;
+  const prompt = hasVideoFrames
+    ? `${buildSingleAdUserPrompt({ context, ad })}\n${buildVideoHookAuditUserPrompt({ context, ad })}\nReturn one JSON object with the single ad fields and a video_hook_audit field.`
+    : buildSingleAdUserPrompt({ context, ad });
+  const content = [{ type: "input_text", text: prompt }];
   // Free/demo plan rule: images are preview-only and must not be sent for AI analysis.
   // Future billing/auth should pass allowImageAnalysis=true only for Plus/Pro requests.
   const image = allowImageAnalysis ? imagePayload(ad) : null;
@@ -494,7 +634,12 @@ async function analyzeWithOpenAI(context, ad, allowImageAnalysis = false) {
     if (frames.length) content.push({ type: "input_text", text: "Video Hook Audit sampled key frames. Analyze first-frame strength, scroll-stop potential, visual clarity, offer visibility, and CTA visibility only. Do not claim motion/audio/transcript/full-video review." }, ...frames);
   }
   const mode = allowImageAnalysis && (image || ad.videoFrames?.length) ? "vision" : "text";
-  const data = await callOpenAI(content, SINGLE_OUTPUT_TOKENS, mode);
+  const data = await callOpenAI(content, {
+    maxOutputTokens: hasVideoFrames ? VIDEO_OUTPUT_TOKENS : SINGLE_OUTPUT_TOKENS,
+    mode,
+    instructions: hasVideoFrames ? `${singleAdSystemPrompt}\n${videoHookAuditSystemPrompt}` : singleAdSystemPrompt,
+    responseFormat: jsonSchemaFormat(hasVideoFrames ? "adnex_single_ad_with_video" : "adnex_single_ad", hasVideoFrames ? singleAdWithVideoSchema : singleAdSchema),
+  });
   return normalizeSingle(parseJson(extractResponseText(data)), context, ad);
 }
 
@@ -511,8 +656,10 @@ function compareMock(context, ads) {
     return {
       ad_id: ads[index].ad_id,
       overall_score: result.overall_score,
+      verdict: result.verdict,
       confidence: result.confidence,
-      recommended_action: result.recommended_action,
+      recommended_action: result.verdict,
+      performance_pattern: result.performance_pattern,
       strongest_point: sorted[0][0].replaceAll("_", " "),
       weakest_point: sorted.at(-1)[0].replaceAll("_", " "),
       scores: Object.fromEntries(scoreKeys.map((key) => [key, result.scores[key].score])),
@@ -520,8 +667,8 @@ function compareMock(context, ads) {
       what_to_fix: result.critical_issues.slice(0, 3),
       suggested_hook_rewrite: result.hook_rewrites[0],
       creative_recommendation: ads[index].creativeType === "video" ? "Make the first 1-3 seconds show the offer, visual hook, and CTA sooner." : result.creative_recommendations[0],
-      attention_potential: ads[index].creativeType === "video" ? videoHook?.attention_potential || "Low" : "",
-      conversion_potential: ads[index].creativeType === "video" ? videoHook?.conversion_potential || "Low" : "",
+      attention_potential: ads[index].creativeType === "video" ? videoHook?.attention_potential || result.attention_potential : result.attention_potential,
+      conversion_potential: ads[index].creativeType === "video" ? videoHook?.conversion_potential || result.conversion_potential : result.conversion_potential,
       video_verdict: ads[index].creativeType === "video" ? videoHook?.video_verdict || "Revise opening" : "",
     };
   });
@@ -551,7 +698,7 @@ function compareMock(context, ads) {
 }
 
 async function compareWithOpenAI(context, ads, allowImageAnalysis = false) {
-  const content = [{ type: "input_text", text: buildComparePrompt(context, ads) }];
+  const content = [{ type: "input_text", text: buildCompareAdsUserPrompt({ context, ads }) }];
   // Free/demo plan rule: images are preview-only and must not be sent for AI analysis.
   // Future billing/auth should pass allowImageAnalysis=true only for Plus/Pro requests.
   if (allowImageAnalysis) {
@@ -563,23 +710,38 @@ async function compareWithOpenAI(context, ads, allowImageAnalysis = false) {
     }
   }
   const hasVisionInput = allowImageAnalysis && ads.some((ad) => ad.imageData || ad.videoFrames?.length);
-  const data = await callOpenAI(content, COMPARE_OUTPUT_TOKENS, hasVisionInput ? "vision" : "text");
+  const data = await callOpenAI(content, {
+    maxOutputTokens: COMPARE_OUTPUT_TOKENS,
+    mode: hasVisionInput ? "vision" : "text",
+    instructions: hasVisionInput ? `${compareAdsSystemPrompt}\n${videoHookAuditSystemPrompt}` : compareAdsSystemPrompt,
+    responseFormat: jsonSchemaFormat("adnex_compare_ads", compareAdsSchema),
+  });
   return normalizeCompare(parseJson(extractResponseText(data)), context, ads);
 }
 
 function normalizeCompare(value = {}, context, ads) {
   const fallback = compareMock(context, ads);
   const compareAds = Array.isArray(value.ads) && value.ads.length ? value.ads : fallback.ads;
+  const scoreValue = (ad, key) => {
+    const aliases = {
+      hook_strength: "hook",
+      offer_clarity: "offer",
+      cta_strength: "cta",
+    };
+    return ad.scores?.[key] ?? ad.scores?.[aliases[key]] ?? 0;
+  };
   return {
     campaign_context: value.campaign_context || fallback.campaign_context,
     ads: compareAds.map((ad, index) => ({
       ad_id: String(ad.ad_id || ads[index]?.ad_id || String.fromCharCode(65 + index)),
       overall_score: Math.max(0, Math.min(100, Number(ad.overall_score || 0))),
+      verdict: actions.includes(ad.verdict) ? ad.verdict : actions.includes(ad.recommended_action) ? ad.recommended_action : "Revise",
       confidence: confidenceLevels.includes(ad.confidence) ? ad.confidence : "Low",
-      recommended_action: actions.includes(ad.recommended_action) ? ad.recommended_action : "Revise",
+      recommended_action: actions.includes(ad.verdict) ? ad.verdict : actions.includes(ad.recommended_action) ? ad.recommended_action : "Revise",
+      performance_pattern: performancePatterns.includes(ad.performance_pattern) ? ad.performance_pattern : "Unclear offer",
       strongest_point: String(ad.strongest_point || "platform fit"),
       weakest_point: String(ad.weakest_point || "offer clarity"),
-      scores: Object.fromEntries(scoreKeys.map((key) => [key, Math.max(0, Math.min(SCORE_MAX[key], Number(ad.scores?.[key] || 0)))])),
+      scores: Object.fromEntries(scoreKeys.map((key) => [key, Math.max(0, Math.min(SCORE_MAX[key], Number(scoreValue(ad, key) || 0)))])),
       what_to_keep: arrayOr(ad.what_to_keep, ["Keep the strongest message angle."]),
       what_to_fix: arrayOr(ad.what_to_fix, ["Fix the weakest score area before launch."]),
       suggested_hook_rewrite: String(ad.suggested_hook_rewrite || "Stop guessing which ad will convert."),

@@ -4,11 +4,10 @@ const sections = [
   ["platform_fit", "Platform Fit"],
   ["objective_fit", "Objective Fit"],
   ["audience_fit", "Audience Fit"],
-  ["hook", "Hook"],
+  ["hook_strength", "Hook Strength"],
   ["creative_strength", "Creative Strength"],
-  ["clarity", "Clarity"],
-  ["offer", "Offer"],
-  ["cta", "CTA"],
+  ["offer_clarity", "Offer Clarity"],
+  ["cta_strength", "CTA Strength"],
 ];
 
 const videoSections = [
@@ -57,7 +56,8 @@ function ConfidenceBadge({ confidence = "Low" }) {
 
 function ScoreSummaryCard({ result, context, label, recommended }) {
   const score = Number(result.overall_score || 0);
-  const tone = verdictFromAction(result.recommended_action || verdictFromScore(score));
+  const action = result.verdict || result.recommended_action || verdictFromScore(score);
+  const tone = verdictFromAction(action);
 
   return (
     <section className={`score-summary score-summary--${tone}`}>
@@ -73,7 +73,7 @@ function ScoreSummaryCard({ result, context, label, recommended }) {
 
         <div className="flex flex-wrap gap-2 sm:justify-end">
           <ConfidenceBadge confidence={result.confidence || "Low"} />
-          <VerdictBadge verdict={result.recommended_action}>{result.recommended_action || "Revise"}</VerdictBadge>
+          <VerdictBadge verdict={action}>{action || "Revise"}</VerdictBadge>
           {recommended ? (
             <span className="verdict-badge verdict-badge--run inline-flex items-center gap-2">
               <Trophy size={14} />
@@ -121,6 +121,15 @@ function BreakdownRow({ title, item }) {
       <p>{item?.feedback || "No feedback returned."}</p>
     </section>
   );
+}
+
+function scoreItem(scores = {}, key) {
+  const aliases = {
+    hook_strength: "hook",
+    offer_clarity: "offer",
+    cta_strength: "cta",
+  };
+  return scores[key] || scores[aliases[key]];
 }
 
 function ListSection({ title, icon: Icon, items, tone = "neutral" }) {
@@ -212,10 +221,12 @@ export default function ScoreResult({ result, context, label, recommended = fals
       <section className="ui-card">
         <h3 className="ui-section-title">
           <Radar size={16} />
-          Detected Ad Angle
+          Performance Pattern
         </h3>
-        <p className="mt-2 font-bold text-[color:var(--text-primary)]">{result.detected_angle?.angle || "Other"}</p>
-        <p className="ui-muted mt-2 text-sm leading-6">{result.detected_angle?.explanation || "The ad angle is not strongly defined yet."}</p>
+        <p className="mt-2 font-bold text-[color:var(--text-primary)]">{result.performance_pattern || "Unclear offer"}</p>
+        <p className="ui-muted mt-2 text-sm leading-6">
+          Attention Potential: {result.attention_potential || "Low"} · Conversion Potential: {result.conversion_potential || "Low"}
+        </p>
       </section>
 
       <section className="ui-card">
@@ -225,7 +236,7 @@ export default function ScoreResult({ result, context, label, recommended = fals
         </h3>
         <div className="mt-4 grid gap-3">
           {sections.map(([key, title]) => (
-            <BreakdownRow key={key} title={title} item={result.scores?.[key] || { score: 0, max: 1, feedback: "No feedback returned." }} />
+            <BreakdownRow key={key} title={title} item={scoreItem(result.scores, key) || { score: 0, max: 1, feedback: "No feedback returned." }} />
           ))}
         </div>
       </section>
