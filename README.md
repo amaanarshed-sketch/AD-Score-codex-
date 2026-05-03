@@ -46,7 +46,8 @@ Run `supabase/schema.sql` in Supabase before enabling live auth, credits, or Lem
 - The system prompt forces JSON-only, concise, non-chatbot outputs.
 - Ad copy and context are trimmed before sending to control token usage.
 - Images are compressed client-side before vision analysis.
-- Video audits use up to 4 sampled frames only; audio and full video context are not assumed.
+- Video Hook Audit uses up to 4 sampled key frames only; full video, audio, and transcripts are not analyzed in v1.
+- Video Hook Audit costs 8 credits because it sends multiple compressed frames to the vision model.
 - If OpenAI fails or returns invalid JSON, the app falls back to mock output and refunds reserved credits.
 
 ## Scripts

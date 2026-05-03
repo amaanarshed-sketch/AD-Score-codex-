@@ -25,7 +25,7 @@ export const PLAN_CONFIG = {
 export const CREDIT_COSTS = {
   text: 1,
   image: 2,
-  video: 6,
+  video: 8,
 };
 
 export function normalizePlan(plan) {

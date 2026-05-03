@@ -19,6 +19,7 @@ export const emptyAdInput = {
   imageData: "",
   videoFrames: [],
   videoAnalysisMode: "none",
+  videoFrameExtractionFailed: false,
   error: "",
 };
 
@@ -65,7 +66,8 @@ export function apiAdPayload(ad, ad_id) {
     videoDuration: ad.creativeType === "video" ? ad.videoDuration : 0,
     imageData: ad.creativeType === "image" ? ad.imageData : "",
     videoFrames: ad.creativeType === "video" ? ad.videoFrames || [] : [],
-    videoAnalysisMode: ad.creativeType === "video" && ad.videoFrames?.length ? "sampled_frames" : "none",
+    videoAnalysisMode: ad.creativeType === "video" && ad.videoFrames?.length ? "sampled_key_frames" : "none",
+    videoFrameExtractionFailed: Boolean(ad.videoFrameExtractionFailed),
   };
 }
 
@@ -139,7 +141,16 @@ async function extractVideoFrames(src) {
   canvas.height = size.height;
   const context = canvas.getContext("2d");
   const safeDuration = Number.isFinite(duration) && duration > 0 ? duration : 1;
-  const times = [0.08, 0.33, 0.66, 0.92].slice(0, maxVideoFrames).map((ratio) => Math.min(Math.max(0, safeDuration * ratio), Math.max(0, safeDuration - 0.05)));
+  const finalTime = Math.max(0, safeDuration - 0.05);
+  const midpoint = Math.max(0, safeDuration / 2);
+  const candidates = [0, Math.min(1, finalTime), Math.min(3, finalTime), safeDuration >= 6 ? midpoint : finalTime];
+  const times = [];
+  for (const candidate of candidates) {
+    const time = Math.min(Math.max(0, candidate), finalTime);
+    const rounded = Number(time.toFixed(2));
+    if (!times.some((item) => Math.abs(item - rounded) < 0.1)) times.push(rounded);
+    if (times.length >= maxVideoFrames) break;
+  }
   const frames = [];
 
   for (const time of times) {
@@ -164,7 +175,7 @@ export default function AdInputBlock({ title, value, onChange }) {
 
   function clearCreative() {
     if (value.creativePreview) URL.revokeObjectURL(value.creativePreview);
-    patch({ creativeFilename: "", creativeType: "none", creativePreview: "", videoDuration: 0, imageData: "", videoFrames: [], videoAnalysisMode: "none", error: "" });
+    patch({ creativeFilename: "", creativeType: "none", creativePreview: "", videoDuration: 0, imageData: "", videoFrames: [], videoAnalysisMode: "none", videoFrameExtractionFailed: false, error: "" });
   }
 
   async function handleFile(file) {
@@ -186,21 +197,21 @@ export default function AdInputBlock({ title, value, onChange }) {
     try {
       if (creativeType === "image") {
         const imageData = await compressImageFile(file);
-        patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: 0, imageData, videoFrames: [], videoAnalysisMode: "none", error: "" });
+        patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: 0, imageData, videoFrames: [], videoAnalysisMode: "none", videoFrameExtractionFailed: false, error: "" });
         return;
       }
 
       const { frames, duration } = await extractVideoFrames(preview);
-      patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: duration, imageData: "", videoFrames: frames, videoAnalysisMode: frames.length ? "sampled_frames" : "none", error: "" });
+      patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: duration, imageData: "", videoFrames: frames, videoAnalysisMode: frames.length ? "sampled_key_frames" : "none", videoFrameExtractionFailed: false, error: "" });
     } catch {
-      patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: 0, imageData: "", videoFrames: [], videoAnalysisMode: "none", error: "Preview loaded, but compression/frame extraction failed. You can still submit with limited creative context." });
+      patch({ creativeFilename: file.name, creativeType, creativePreview: preview, videoDuration: 0, imageData: "", videoFrames: [], videoAnalysisMode: "none", videoFrameExtractionFailed: creativeType === "video", error: creativeType === "video" ? "Frame extraction failed, so this audit used limited video context." : "Preview loaded, but image compression failed. You can still submit with limited creative context." });
     }
   }
 
   function handleVideoMetadata(event) {
     const duration = Number(event.currentTarget.duration || 0);
     if (Number.isFinite(duration) && duration > 0) {
-      patch({ videoDuration: Math.round(duration), videoAnalysisMode: value.videoFrames?.length ? "sampled_frames" : value.videoAnalysisMode });
+      patch({ videoDuration: Math.round(duration), videoAnalysisMode: value.videoFrames?.length ? "sampled_key_frames" : value.videoAnalysisMode });
     }
   }
 
@@ -266,7 +277,7 @@ export default function AdInputBlock({ title, value, onChange }) {
                 <p className="app-title text-sm font-bold text-white">{value.creativeFilename}</p>
                 <p className="app-muted text-xs text-slate-500">
                   {value.creativeType === "video"
-                    ? `Video preview ready${value.videoDuration ? ` · ${value.videoDuration}s detected` : ""}${value.videoFrames?.length ? ` · ${value.videoFrames.length} sampled frames for AI audit` : ""}.`
+                    ? `Video Hook Audit ready${value.videoDuration ? ` · ${value.videoDuration}s detected` : ""}${value.videoFrames?.length ? ` · ${value.videoFrames.length} sampled key frames` : ""}.`
                     : "Preview only on Free. AI image analysis is included in Plus."}
                 </p>
               </div>
@@ -277,7 +288,12 @@ export default function AdInputBlock({ title, value, onChange }) {
             {value.creativeType === "image" ? (
               <img src={value.creativePreview} alt="" className="max-h-72 w-full rounded-lg object-contain" />
             ) : (
-              <video src={value.creativePreview} controls onLoadedMetadata={handleVideoMetadata} className="max-h-72 w-full rounded-lg" />
+              <>
+                <video src={value.creativePreview} controls onLoadedMetadata={handleVideoMetadata} className="max-h-72 w-full rounded-lg" />
+                <p className="app-muted mt-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-xs leading-5 text-slate-500">
+                  Video Hook Audit uses sampled key frames to evaluate scroll-stop potential, visual clarity, and offer visibility. It does not analyze full video, audio, or transcripts yet.
+                </p>
+              </>
             )}
           </div>
         ) : (
@@ -286,7 +302,7 @@ export default function AdInputBlock({ title, value, onChange }) {
               <UploadCloud size={22} />
             </span>
             <span className="app-label font-bold text-slate-200">Drop in an image or video creative</span>
-            <span className="app-muted max-w-md text-xs leading-5 text-slate-500">JPG, PNG, WEBP, MP4, MOV, WEBM up to 25MB. Free keeps creative as preview.</span>
+            <span className="app-muted max-w-md text-xs leading-5 text-slate-500">JPG, PNG, WEBP, MP4, MOV, WEBM up to 25MB. Video Hook Audit uses sampled key frames and does not analyze full video, audio, or transcripts yet.</span>
             <span className="app-upload-button rounded-full bg-white px-4 py-2 text-xs font-black text-black">Choose creative</span>
             <input type="file" accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" className="hidden" onChange={(event) => handleFile(event.target.files?.[0])} />
           </label>

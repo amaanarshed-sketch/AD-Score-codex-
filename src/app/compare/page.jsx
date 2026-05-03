@@ -239,7 +239,7 @@ export default function ComparePage() {
               <section className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
                 <h2 className="mb-4 text-sm font-black uppercase tracking-[0.16em] text-slate-400">Ranking Table</h2>
                 <div className="overflow-x-auto">
-                  <table className="w-full min-w-[760px] text-left text-sm">
+                  <table className="w-full min-w-[920px] text-left text-sm">
                     <thead className="text-xs uppercase tracking-[0.14em] text-slate-500">
                       <tr>
                         <th className="py-3 pr-4">Rank</th>
@@ -247,6 +247,8 @@ export default function ComparePage() {
                         <th className="py-3 pr-4">Score</th>
                         <th className="py-3 pr-4">Action</th>
                         <th className="py-3 pr-4">Confidence</th>
+                        <th className="py-3 pr-4">Attention</th>
+                        <th className="py-3 pr-4">Conversion</th>
                         <th className="py-3 pr-4">Strongest</th>
                         <th className="py-3">Weakest</th>
                       </tr>
@@ -261,6 +263,8 @@ export default function ComparePage() {
                             <td className="py-3 pr-4 font-bold">{rank.score}/100</td>
                             <td className={`py-3 pr-4 font-bold ${actionStyle(ad?.recommended_action)}`}>{ad?.recommended_action}</td>
                             <td className="py-3 pr-4 text-slate-300">{ad?.confidence}</td>
+                            <td className="py-3 pr-4 text-slate-300">{ad?.attention_potential || "N/A"}</td>
+                            <td className="py-3 pr-4 text-slate-300">{ad?.conversion_potential || "N/A"}</td>
                             <td className="py-3 pr-4 text-slate-300">{ad?.strongest_point}</td>
                             <td className="py-3 text-slate-300">{ad?.weakest_point}</td>
                           </tr>
@@ -341,7 +345,10 @@ export default function ComparePage() {
                     </div>
                     <div className="mt-4 grid gap-3 md:grid-cols-2">
                       <p className="rounded-lg border border-white/10 bg-slate-950/70 p-3 text-sm font-semibold leading-6 text-slate-200">{ad.suggested_hook_rewrite}</p>
-                      <p className="rounded-lg border border-white/10 bg-slate-950/70 p-3 text-sm leading-6 text-slate-300">{ad.creative_recommendation}</p>
+                      <p className="rounded-lg border border-white/10 bg-slate-950/70 p-3 text-sm leading-6 text-slate-300">
+                        {ad.video_verdict ? `${ad.video_verdict}: ` : ""}
+                        {ad.creative_recommendation}
+                      </p>
                     </div>
                   </article>
                 ))}

@@ -31,8 +31,8 @@ export default function ProductStatus() {
       </p>
       <p className="mt-2 text-sm leading-6 text-slate-400">
         {status.aiConfigured
-          ? "Adnex is connected to AI analysis. Links still provide platform/context only unless scraping is added later, and full video scoring needs the video pipeline to pass frames/transcript."
-          : "You can test the full product flow without paid AI calls. Scores, image reviews, and video audit sections use the built-in demo engine until the AI/video pipeline is connected."}
+          ? "Adnex is connected to AI analysis. Links provide platform/context only, and Video Hook Audit reviews sampled key frames rather than full video, audio, or transcripts."
+          : "You can test the full product flow without paid AI calls. Scores, image reviews, and Video Hook Audit sections use the built-in demo engine until real AI is connected."}
       </p>
       <p className="mt-2 text-xs leading-5 text-slate-500">
         {status.billingConfigured

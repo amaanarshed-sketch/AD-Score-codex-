@@ -155,7 +155,7 @@ export async function authorizeAnalysisRequest(request, { compare = false, ad, a
   if (usesVideo && !canUseVideoAudit(plan)) {
     return {
       allowed: false,
-      response: NextResponse.json({ error: "Video audits are available on Plus and Pro. Free video uploads remain preview-only." }, { status: 402 }),
+      response: NextResponse.json({ error: "Video Hook Audit is available on Plus and Pro. Free video uploads remain preview-only." }, { status: 402 }),
     };
   }
 

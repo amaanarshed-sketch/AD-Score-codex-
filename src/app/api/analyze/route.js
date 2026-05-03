@@ -44,9 +44,10 @@ Ignore branding fluff.
 
 6. VIDEO HANDLING
 If video frames are provided:
-- Analyze only visible frames
-- Do NOT assume audio or full video context
-- Briefly mention limitation if needed
+- Analyze sampled key frames only
+- Do NOT claim to analyze motion, audio, transcript, or full narrative
+- Focus on first-frame strength, scroll-stop potential, visual clarity, offer visibility, and CTA visibility
+- Separate attention potential from conversion potential
 
 7. IMPROVEMENTS
 - Provide 3–5 improvements
@@ -96,6 +97,8 @@ const scoreKeys = Object.keys(SCORE_MAX);
 const angles = ["Problem-solution", "Social proof", "Offer-driven", "Curiosity", "Educational", "UGC-style", "Brand awareness", "Other"];
 const actions = ["Run", "Revise", "Reject"];
 const confidenceLevels = ["Low", "Medium", "High"];
+const videoPotentials = ["Low", "Medium", "High"];
+const videoVerdicts = ["Strong hook, weak conversion", "Weak scroll-stop", "Strong overall", "Revise opening", "Improve offer clarity"];
 
 function compactText(value = "", limit = TEXT_LIMIT) {
   return String(value || "").replace(/\s+/g, " ").trim().slice(0, limit);
@@ -114,7 +117,8 @@ function cleanAd(input = {}, index = 0) {
     videoDuration: Math.max(0, Math.round(Number(input.videoDuration || 0))),
     imageData: creativeType === "image" ? String(input.imageData || "") : "",
     videoFrames: creativeType === "video" && Array.isArray(input.videoFrames) ? input.videoFrames.filter((frame) => String(frame).startsWith("data:image/")).slice(0, MAX_VIDEO_FRAMES) : [],
-    videoAnalysisMode: input.videoAnalysisMode === "sampled_frames" ? "sampled_frames" : "none",
+    videoAnalysisMode: ["sampled_key_frames", "sampled_frames"].includes(input.videoAnalysisMode) ? "sampled_key_frames" : "none",
+    videoFrameExtractionFailed: Boolean(input.videoFrameExtractionFailed),
   };
 }
 
@@ -131,7 +135,7 @@ function hasInput(ad) {
 }
 
 function creativeLine(ad) {
-  if (ad.creativeType === "video") return `Video: ${ad.creativeFilename || "unnamed"}, ${ad.videoDuration || "unknown"}s, ${ad.videoFrames.length} sampled frames. Analyze visible frames only; no audio/full-video assumptions.`;
+  if (ad.creativeType === "video") return `Video Hook Audit: ${ad.creativeFilename || "unnamed"}, ${ad.videoDuration || "unknown"}s, ${ad.videoFrames.length} sampled key frames. Analyze opening-frame attention and conversion support only; no motion/audio/transcript/full-video claims.`;
   if (ad.creativeType === "image") return `Image creative uploaded: ${ad.creativeFilename || "unnamed file"}. Creative preview exists: ${ad.hasCreativePreview ? "yes" : "no"}.`;
   return "No creative uploaded.";
 }
@@ -140,11 +144,13 @@ function buildSinglePrompt(context, ad) {
   return `Task: score one ad. Return JSON only.
 Context: platform=${context.platform}; objective=${context.objective}; audience=${context.audience || "Not provided"}.
 Input: copy="${ad.adCopy || "Not provided"}"; link="${ad.postLink || "Not provided"}"; link_platform="${ad.detectedPlatform || "Not detected"}"; creative=${ad.creativeType}; file="${ad.creativeFilename || "none"}"; video_seconds=${ad.videoDuration || 0}; video_frames=${ad.videoFrames.length}.
-Video rule: if frames are attached, analyze visible frames only; no audio/full-video assumptions.
-Schema keys: overall_score, confidence, recommended_action, input_summary, scores, detected_angle, key_strengths, critical_issues, improvements, hook_rewrites, creative_recommendations, video_analysis, final_verdict.
+Video rule: if frames are attached, you are analyzing sampled key frames from a video ad, not the full video. Do not claim to analyze motion, audio, transcript, or full narrative. Focus on first-frame strength, scroll-stop potential, visual clarity, offer visibility, CTA visibility, and whether the opening is likely to earn attention.
+Schema keys: overall_score, confidence, recommended_action, input_summary, scores, detected_angle, key_strengths, critical_issues, improvements, hook_rewrites, creative_recommendations, video_hook_audit, final_verdict.
 Scores max: platform_fit 15, objective_fit 15, audience_fit 15, hook 15, creative_strength 15, clarity 10, offer 10, cta 5. Overall totals 100.
 Arrays: key_strengths 1-3, critical_issues 1-3, improvements 3-5 under 12 words, hook_rewrites exactly 3, creative_recommendations 1-4.
-Use existing UI shape: each scores item is {score,max,feedback}; detected_angle is {angle,explanation}; video_analysis includes audit_type, summary, six score sections, retention_risks, scene_recommendations.`;
+Use existing UI shape: each scores item is {score,max,feedback}; detected_angle is {angle,explanation}; video_hook_audit includes analysis_mode, frame_count, hook_strength, visual_clarity, offer_visibility, creative_structure, cta_visibility, attention_potential, conversion_potential, video_verdict, limitations.
+Video Hook Audit score max: hook_strength 30, visual_clarity 20, offer_visibility 20, creative_structure 15, cta_visibility 15.
+Video recommendations must focus on first 1-3 seconds, visual hook, text overlay, offer visibility, CTA visibility, clutter, and readability. Do not mention audio/transcript.`;
 }
 
 function buildComparePrompt(context, ads) {
@@ -153,9 +159,10 @@ Context: platform=${context.platform}; objective=${context.objective}; audience=
 Ads:
 ${ads.map((ad) => `${ad.ad_id}: copy="${ad.adCopy || "Not provided"}"; link="${ad.postLink || "Not provided"}"; link_platform="${ad.detectedPlatform || "Not detected"}"; creative=${creativeLine(ad)}`).join("\n")}
 Schema keys: campaign_context, ads, ranking, winner, final_recommendation, test_plan.
-Per ad: ad_id, overall_score, confidence, recommended_action, strongest_point, weakest_point, scores, what_to_keep, what_to_fix, suggested_hook_rewrite, creative_recommendation.
+Per ad: ad_id, overall_score, confidence, recommended_action, strongest_point, weakest_point, scores, what_to_keep, what_to_fix, suggested_hook_rewrite, creative_recommendation, attention_potential, conversion_potential, video_verdict.
 Scores max: platform_fit 15, objective_fit 15, audience_fit 15, hook 15, creative_strength 15, clarity 10, offer 10, cta 5.
-Rules: within 5 points => A/B test. All below 60 => revise all. Flag low-confidence incomplete inputs. Mention weak CTA/offer risk. If frames are attached, analyze visible frames only.`;
+Video rule: for video ads, compare attention potential separately from conversion potential. Do not pick a winner only because its hook is stronger if offer or CTA clarity is weak.
+Rules: within 5 points => A/B test. All below 60 => revise all. Flag low-confidence incomplete inputs. Mention weak CTA/offer risk. If frames are attached, analyze sampled key frames only; no motion/audio/transcript/full-video claims.`;
 }
 
 function inferConfidence(context, ad) {
@@ -164,6 +171,8 @@ function inferConfidence(context, ad) {
   if (ad.adCopy.length >= 80) points += 1;
   if (ad.creativeType !== "none") points += 1;
   if (ad.postLink) points += 1;
+  if (ad.creativeType === "video" && !ad.videoFrames?.length) points -= 1;
+  if (ad.videoFrameExtractionFailed) points -= 1;
   if (points >= 3) return "High";
   if (points >= 2) return "Medium";
   return "Low";
@@ -197,14 +206,14 @@ function mockSingle(context, ad) {
   const angle = detectAngle(copy, ad.creativeType);
 
   const isVideo = ad.creativeType === "video";
-  const videoAnalysis = buildVideoAnalysis(context, ad, { hasCopy, hasCTA, angle });
+  const videoHookAudit = buildVideoHookAudit(context, ad, { hasCopy, hasCTA, angle });
 
   const scores = {
     platform_fit: section(9 + (hasCreative ? 2 : 0) + (context.platform === "TikTok" && copy.length < 220 ? 2 : 0), "Platform fit is limited by how native the ad feels for the selected placement and feed behavior."),
     objective_fit: section(8 + (hasCTA ? 3 : 0) + (context.objective === "Awareness" ? 1 : 0), `For ${context.objective}, the ad needs a clearer bridge between the message and the intended action.`),
     audience_fit: section(context.audience ? 11 : 5, context.audience ? "The audience context is usable, but the ad should call out their exact buying moment earlier." : "Audience fit is weak because the target audience was not specific enough."),
     hook: section((copy ? 8 : 3) + (/\?/.test(copy) ? 3 : 0) + (angle !== "Other" ? 2 : 0), hasCopy ? "The hook has a direction, but it needs sharper tension in the first line." : "No copy was provided, so hook quality can only be inferred from creative/link context."),
-    creative_strength: section(hasCreative ? (isVideo ? 11 : 10) : 4, hasCreative ? (isVideo ? "Video audit checks scroll-stopping open, pacing, visual clarity, product visibility, and CTA timing. This score is stricter because weak motion creative can waste budget fast." : "Image preview exists; check visual hierarchy, product visibility, and contrast before launch.") : "No creative was uploaded, so visual stopping power cannot be judged."),
+    creative_strength: section(hasCreative ? (isVideo ? 11 : 10) : 4, hasCreative ? (isVideo ? "Video Hook Audit checks sampled key frames for scroll-stop potential, visual clarity, offer visibility, and CTA visibility." : "Image preview exists; check visual hierarchy, product visibility, and contrast before launch.") : "No creative was uploaded, so visual stopping power cannot be judged."),
     clarity: section(hasCopy ? 7 + (copy.length > 80 ? 1 : 0) : 4, hasCopy ? "The message is understandable, but the outcome could be more concrete." : "Without copy, clarity depends too much on the creative or post link."),
     offer: section(5 + (hasNumber ? 2 : 0), hasNumber ? "The offer has a concrete detail, but it needs stronger urgency or proof." : "The offer lacks a specific number, deadline, mechanism, or proof point."),
     cta: section(hasCTA ? 4 : 2, hasCTA ? "The CTA is present, but should repeat the promised outcome." : "The CTA is weak or missing, which can reduce response."),
@@ -233,6 +242,7 @@ function mockSingle(context, ad) {
     key_strengths: [
       hasCopy ? "The ad has enough copy to judge the core message." : "The creative/link can still be used as context for a basic review.",
       hasCreative ? "Creative preview gives a starting point for visual recommendations." : "The analysis can focus tightly on copy and offer clarity.",
+      ...(ad.videoFrameExtractionFailed ? ["Frame extraction failed, so video confidence is limited."] : []),
     ],
     critical_issues: [
       ...(confidence === "Low" ? ["Low confidence because copy, creative, audience, or link context is incomplete."] : []),
@@ -252,58 +262,66 @@ function mockSingle(context, ad) {
     ],
     creative_recommendations: [
       hasCreative ? "Make the product or outcome visible in the first frame." : "Upload a creative to evaluate visual hierarchy and stopping power.",
-      ad.creativeType === "video" ? "Open with the clearest pain point or result in the first 1-2 seconds, then cut to proof or product use." : "Use high contrast text overlay only if it clarifies the offer.",
+      ad.creativeType === "video" ? "Make the first 1-3 seconds show the pain, result, offer, or CTA." : "Use high contrast text overlay only if it clarifies the offer.",
       "Show a face/person if trust or relatability is important for the audience.",
     ],
-    video_analysis: videoAnalysis,
+    video_hook_audit: videoHookAudit,
     final_verdict: recommended_action === "Run" ? "Run this, but monitor CTA performance closely." : recommended_action === "Revise" ? "Revise before running. The idea is usable, but the execution is not ready to scale." : "Do not run this yet. The ad needs a clearer hook, offer, or creative before spending budget.",
   }, context, ad);
 }
 
-function buildVideoAnalysis(context, ad, signals = {}) {
+function buildVideoHookAudit(context, ad, signals = {}) {
+  const limitations = "Based on sampled key frames only. Audio/transcript/full video sequence not analyzed.";
   if (ad.creativeType !== "video") {
     return {
-      audit_type: "none",
-      summary: "No video creative was submitted.",
-      first_three_seconds: videoSection(0, 20, "No video was provided, so the opening cannot be judged."),
-      visual_flow: videoSection(0, 20, "No video was provided, so scene flow cannot be judged."),
-      on_screen_text: videoSection(0, 15, "No video was provided, so text overlays cannot be judged."),
-      product_clarity: videoSection(0, 15, "No video was provided, so product visibility cannot be judged."),
-      cta_timing: videoSection(0, 10, "No video was provided, so CTA timing cannot be judged."),
-      platform_native_feel: videoSection(0, 10, "No video was provided, so platform-native fit cannot be judged."),
-      retention_risks: [],
-      scene_recommendations: [],
+      analysis_mode: "none",
+      frame_count: 0,
+      hook_strength: videoSection(0, 30, "No video was provided, so opening-frame hook strength cannot be judged."),
+      visual_clarity: videoSection(0, 20, "No video was provided, so visual clarity cannot be judged."),
+      offer_visibility: videoSection(0, 20, "No video was provided, so offer visibility cannot be judged."),
+      creative_structure: videoSection(0, 15, "No video was provided, so opening structure cannot be judged."),
+      cta_visibility: videoSection(0, 15, "No video was provided, so CTA visibility cannot be judged."),
+      attention_potential: "Low",
+      conversion_potential: "Low",
+      video_verdict: "Revise opening",
+      limitations,
     };
   }
 
   const isShort = ad.videoDuration > 0 && ad.videoDuration <= 35;
   const tiktokLike = context.platform === "TikTok" || /instagram|facebook/i.test(context.platform);
-  const firstScore = Math.min(20, 9 + (signals.hasCopy ? 4 : 0) + (signals.angle !== "Other" ? 3 : 0) + (isShort ? 2 : 0));
-  const flowScore = Math.min(20, 10 + (isShort ? 3 : 0) + (signals.hasCTA ? 2 : 0));
-  const textScore = Math.min(15, 7 + (signals.hasCopy ? 4 : 0));
-  const clarityScore = Math.min(15, 8 + (signals.hasCopy ? 2 : 0) + (context.audience ? 2 : 0));
-  const ctaScore = Math.min(10, signals.hasCTA ? 7 : 4);
-  const nativeScore = Math.min(10, 5 + (tiktokLike ? 3 : 1) + (isShort ? 1 : 0));
+  const hasFrames = ad.videoFrames?.length > 0;
+  const hookScore = Math.min(30, 12 + (hasFrames ? 5 : 0) + (signals.hasCopy ? 5 : 0) + (signals.angle !== "Other" ? 5 : 0) + (isShort ? 2 : 0));
+  const clarityScore = Math.min(20, 8 + (hasFrames ? 4 : 0) + (signals.hasCopy ? 4 : 0) + (tiktokLike ? 1 : 0));
+  const offerScore = Math.min(20, 7 + (signals.hasCopy ? 4 : 0) + (context.audience ? 3 : 0));
+  const structureScore = Math.min(15, 6 + (hasFrames ? 3 : 0) + (isShort ? 3 : 0) + (signals.angle !== "Other" ? 2 : 0));
+  const ctaScore = Math.min(15, signals.hasCTA ? 10 : 5);
+  const attentionTotal = hookScore + clarityScore + structureScore;
+  const conversionTotal = offerScore + ctaScore + (signals.hasCopy ? 8 : 3);
+  const attention_potential = attentionTotal >= 55 ? "High" : attentionTotal >= 38 ? "Medium" : "Low";
+  const conversion_potential = conversionTotal >= 35 ? "High" : conversionTotal >= 24 ? "Medium" : "Low";
+  const video_verdict = attention_potential === "High" && conversion_potential !== "High"
+    ? "Strong hook, weak conversion"
+    : attention_potential === "Low"
+      ? "Weak scroll-stop"
+      : attention_potential === "High" && conversion_potential === "High"
+        ? "Strong overall"
+        : conversion_potential === "Low"
+          ? "Improve offer clarity"
+          : "Revise opening";
 
   return {
-    audit_type: ad.videoFrames?.length ? "basic_video" : "full_video",
-    summary: ad.videoFrames?.length ? `Audit uses ${ad.videoFrames.length} sampled frames only; audio and full motion are not assumed.` : `${ad.creativeFilename || "Uploaded video"} is treated as a video ad audit for ${context.platform}.`,
-    first_three_seconds: videoSection(firstScore, 20, signals.hasCopy ? "The opening has enough message context to judge the hook, but it still needs a sharper visual or text cue in the first second." : "The video needs a clear first-frame text hook so the viewer understands the promise before sound or context loads."),
-    visual_flow: videoSection(flowScore, 20, isShort ? "The duration is suitable for a fast paid social test; keep each scene focused on one idea." : "The video may be long for a cold paid-social placement; tighten the sequence around hook, proof, offer, and CTA."),
-    on_screen_text: videoSection(textScore, 15, signals.hasCopy ? "Use the strongest copy as large on-screen text, not only in the caption. Keep it readable on mobile." : "Add concise on-screen text so the ad works without sound."),
-    product_clarity: videoSection(clarityScore, 15, context.audience ? "The product or outcome should be visible before the viewer has to infer why it matters to this audience." : "Product clarity is limited because the target audience is broad or missing."),
-    cta_timing: videoSection(ctaScore, 10, signals.hasCTA ? "The CTA exists, but it should appear once near the middle and again in the final frame." : "The CTA is not strong enough. Add a direct action tied to the offer."),
-    platform_native_feel: videoSection(nativeScore, 10, tiktokLike ? "The creative should feel like a native short-form post: fast open, human/product proof, readable captions, and minimal polish." : "Match the pacing and production style to the selected platform instead of using a generic creative."),
-    retention_risks: [
-      "If the first second does not show the pain point, outcome, or product, viewers may scroll before the offer lands.",
-      "If captions are small or delayed, the ad will underperform for viewers watching without sound.",
-      "If the CTA appears only at the end, high-intent viewers may not know what to do soon enough.",
-    ],
-    scene_recommendations: [
-      "Scene 1: lead with the strongest pain point or result in large mobile-readable text.",
-      "Scene 2: show product use, proof, or transformation instead of abstract branding.",
-      "Final scene: repeat the offer and CTA with a clear next step.",
-    ],
+    analysis_mode: hasFrames ? "sampled_key_frames" : "limited_video_context",
+    frame_count: ad.videoFrames?.length || 0,
+    hook_strength: videoSection(hookScore, 30, signals.hasCopy ? "The opening has enough message context, but the first frame still needs a sharper visual or text cue." : "The opening needs a clear first-frame hook so viewers understand the promise instantly."),
+    visual_clarity: videoSection(clarityScore, 20, "Keep the first frame readable on mobile with one dominant focal point and minimal clutter."),
+    offer_visibility: videoSection(offerScore, 20, context.audience ? "Show the offer or outcome earlier so this audience understands why the ad matters." : "Offer visibility is limited because the target audience is broad or missing."),
+    creative_structure: videoSection(structureScore, 15, isShort ? "The opening structure can work for paid social if each early frame carries one idea." : "The opening should tighten around hook, proof, offer, and CTA before the viewer scrolls."),
+    cta_visibility: videoSection(ctaScore, 15, signals.hasCTA ? "The CTA exists, but it should become visible sooner in the opening frames." : "The CTA is not visible enough. Add a direct next step earlier."),
+    attention_potential,
+    conversion_potential,
+    video_verdict,
+    limitations: ad.videoFrameExtractionFailed ? "Frame extraction failed, so this audit used limited video context. Audio/transcript/full video sequence not analyzed." : limitations,
   };
 }
 
@@ -345,25 +363,45 @@ function normalizeSingle(value = {}, context = {}, ad = {}) {
     improvements: shortArray(value.improvements, ["Clarify the hook.", "Strengthen the offer.", "Make CTA direct."], { min: 3, max: 5 }),
     hook_rewrites: shortArray(value.hook_rewrites, ["Stop wasting budget on weak ads.", "Know before you spend.", "Fix the ad before launch."], { min: 3, max: 3 }),
     creative_recommendations: shortArray(value.creative_recommendations, [ad.creativeType === "video" ? "Improve first-frame clarity." : "Improve visual hierarchy."], { min: 1, max: 4 }),
-    video_analysis: normalizeVideoAnalysis(value.video_analysis, context, ad),
+    video_hook_audit: normalizeVideoHookAudit(value.video_hook_audit || value.video_analysis, context, ad),
     final_verdict: String(value.final_verdict || `${action} this ad based on the current score and confidence.`),
   };
 }
 
-function normalizeVideoAnalysis(value = {}, context = {}, ad = {}) {
-  const fallback = buildVideoAnalysis(context, ad, {});
-  if (ad.creativeType !== "video" && value.audit_type !== "full_video" && value.audit_type !== "basic_video") return fallback;
+function normalizeVideoHookAudit(value = {}, context = {}, ad = {}) {
+  if (value?.audit_type) return normalizeLegacyVideoAnalysis(value, context, ad);
+  const fallback = buildVideoHookAudit(context, ad, {});
+  if (ad.creativeType !== "video" && value.analysis_mode !== "sampled_key_frames") return fallback;
   return {
-    audit_type: ["none", "basic_video", "full_video"].includes(value.audit_type) ? value.audit_type : fallback.audit_type,
-    summary: String(value.summary || fallback.summary),
-    first_three_seconds: normalizeVideoSection(value.first_three_seconds, fallback.first_three_seconds),
-    visual_flow: normalizeVideoSection(value.visual_flow, fallback.visual_flow),
-    on_screen_text: normalizeVideoSection(value.on_screen_text, fallback.on_screen_text),
-    product_clarity: normalizeVideoSection(value.product_clarity, fallback.product_clarity),
-    cta_timing: normalizeVideoSection(value.cta_timing, fallback.cta_timing),
-    platform_native_feel: normalizeVideoSection(value.platform_native_feel, fallback.platform_native_feel),
-    retention_risks: arrayOr(value.retention_risks, fallback.retention_risks),
-    scene_recommendations: arrayOr(value.scene_recommendations, fallback.scene_recommendations),
+    analysis_mode: ["none", "sampled_key_frames", "limited_video_context"].includes(value.analysis_mode) ? value.analysis_mode : fallback.analysis_mode,
+    frame_count: Math.max(0, Math.min(MAX_VIDEO_FRAMES, Number(value.frame_count ?? fallback.frame_count ?? 0))),
+    hook_strength: normalizeVideoSection(value.hook_strength, fallback.hook_strength),
+    visual_clarity: normalizeVideoSection(value.visual_clarity, fallback.visual_clarity),
+    offer_visibility: normalizeVideoSection(value.offer_visibility, fallback.offer_visibility),
+    creative_structure: normalizeVideoSection(value.creative_structure, fallback.creative_structure),
+    cta_visibility: normalizeVideoSection(value.cta_visibility, fallback.cta_visibility),
+    attention_potential: videoPotentials.includes(value.attention_potential) ? value.attention_potential : fallback.attention_potential,
+    conversion_potential: videoPotentials.includes(value.conversion_potential) ? value.conversion_potential : fallback.conversion_potential,
+    video_verdict: videoVerdicts.includes(value.video_verdict) ? value.video_verdict : fallback.video_verdict,
+    limitations: String(value.limitations || fallback.limitations),
+  };
+}
+
+function normalizeLegacyVideoAnalysis(value = {}, context = {}, ad = {}) {
+  const fallback = buildVideoHookAudit(context, ad, {});
+  if (ad.creativeType !== "video") return fallback;
+  return {
+    analysis_mode: value.audit_type === "none" ? "none" : ad.videoFrames?.length ? "sampled_key_frames" : "limited_video_context",
+    frame_count: ad.videoFrames?.length || 0,
+    hook_strength: normalizeVideoSection(value.first_three_seconds, fallback.hook_strength),
+    visual_clarity: normalizeVideoSection(value.on_screen_text || value.product_clarity, fallback.visual_clarity),
+    offer_visibility: normalizeVideoSection(value.product_clarity, fallback.offer_visibility),
+    creative_structure: normalizeVideoSection(value.visual_flow || value.platform_native_feel, fallback.creative_structure),
+    cta_visibility: normalizeVideoSection(value.cta_timing, fallback.cta_visibility),
+    attention_potential: fallback.attention_potential,
+    conversion_potential: fallback.conversion_potential,
+    video_verdict: fallback.video_verdict,
+    limitations: "Based on sampled key frames only. Audio/transcript/full video sequence not analyzed.",
   };
 }
 
@@ -451,7 +489,10 @@ async function analyzeWithOpenAI(context, ad, allowImageAnalysis = false) {
   // Future billing/auth should pass allowImageAnalysis=true only for Plus/Pro requests.
   const image = allowImageAnalysis ? imagePayload(ad) : null;
   if (image) content.push(image);
-  if (allowImageAnalysis && ad.creativeType === "video") content.push(...videoFramePayloads(ad));
+  if (allowImageAnalysis && ad.creativeType === "video") {
+    const frames = videoFramePayloads(ad);
+    if (frames.length) content.push({ type: "input_text", text: "Video Hook Audit sampled key frames. Analyze first-frame strength, scroll-stop potential, visual clarity, offer visibility, and CTA visibility only. Do not claim motion/audio/transcript/full-video review." }, ...frames);
+  }
   const mode = allowImageAnalysis && (image || ad.videoFrames?.length) ? "vision" : "text";
   const data = await callOpenAI(content, SINGLE_OUTPUT_TOKENS, mode);
   return normalizeSingle(parseJson(extractResponseText(data)), context, ad);
@@ -466,6 +507,7 @@ function compareMock(context, ads) {
   const analyzed = ads.map((ad) => mockSingle(context, ad));
   const compareAds = analyzed.map((result, index) => {
     const sorted = scoreKeys.map((key) => [key, result.scores[key].score / result.scores[key].max]).sort((a, b) => b[1] - a[1]);
+    const videoHook = result.video_hook_audit;
     return {
       ad_id: ads[index].ad_id,
       overall_score: result.overall_score,
@@ -477,7 +519,10 @@ function compareMock(context, ads) {
       what_to_keep: result.key_strengths.slice(0, 2),
       what_to_fix: result.critical_issues.slice(0, 3),
       suggested_hook_rewrite: result.hook_rewrites[0],
-      creative_recommendation: ads[index].creativeType === "video" ? result.video_analysis?.scene_recommendations?.[0] || result.creative_recommendations[0] : result.creative_recommendations[0],
+      creative_recommendation: ads[index].creativeType === "video" ? "Make the first 1-3 seconds show the offer, visual hook, and CTA sooner." : result.creative_recommendations[0],
+      attention_potential: ads[index].creativeType === "video" ? videoHook?.attention_potential || "Low" : "",
+      conversion_potential: ads[index].creativeType === "video" ? videoHook?.conversion_potential || "Low" : "",
+      video_verdict: ads[index].creativeType === "video" ? videoHook?.video_verdict || "Revise opening" : "",
     };
   });
   const ranking = [...compareAds].sort((a, b) => b.overall_score - a.overall_score).map((ad, index) => ({
@@ -498,9 +543,9 @@ function compareMock(context, ads) {
       ad_id: allLow ? "" : winner.ad_id,
       score: allLow ? 0 : winner.score,
       why_it_won: allLow ? "No ad is strong enough to recommend yet." : close ? `Ads ${winner.ad_id} and ${second.ad_id} are close, so this should be an A/B test rather than a hard winner.` : `Ad ${winner.ad_id} has the strongest combination of score, confidence, and campaign fit.`,
-      remaining_risk: allLow ? "All ads need revision before spend." : "Check CTA clarity and offer specificity before increasing budget.",
+      remaining_risk: allLow ? "All ads need revision before spend." : compareAds.some((ad) => ad.video_verdict === "Strong hook, weak conversion") ? "One video has stronger attention potential than conversion clarity, so fix offer/CTA before scaling." : "Check CTA clarity and offer specificity before increasing budget.",
     },
-    final_recommendation: allLow ? "Do not run any yet — all need revision." : close ? `Test Ad ${winner.ad_id} and Ad ${second.ad_id}.` : `Run Ad ${winner.ad_id} first.`,
+    final_recommendation: allLow ? "Do not run any yet - all need revision." : close ? `Test Ad ${winner.ad_id} and Ad ${second.ad_id}.` : compareAds.find((ad) => ad.ad_id === winner.ad_id)?.video_verdict === "Strong hook, weak conversion" ? `Ad ${winner.ad_id} has stronger attention, but revise offer and CTA before conversion campaigns.` : `Run Ad ${winner.ad_id} first.`,
     test_plan: { primary_ad: allLow ? "" : winner.ad_id, backup_ad: second?.ad_id || "", testing_note: close ? "Scores are within 5 points, so split testing is safer." : "Start with the top ad and keep the runner-up as backup." },
   };
 }
@@ -514,7 +559,7 @@ async function compareWithOpenAI(context, ads, allowImageAnalysis = false) {
       const image = imagePayload(ad);
       if (image) content.push({ type: "input_text", text: `Image creative for Ad ${ad.ad_id}` }, image);
       const frames = videoFramePayloads(ad);
-      if (frames.length) content.push({ type: "input_text", text: `Sampled video frames for Ad ${ad.ad_id}. Analyze visible frames only.` }, ...frames);
+      if (frames.length) content.push({ type: "input_text", text: `Video Hook Audit sampled key frames for Ad ${ad.ad_id}. Analyze attention potential and conversion potential only. Do not claim motion/audio/transcript/full-video review.` }, ...frames);
     }
   }
   const hasVisionInput = allowImageAnalysis && ads.some((ad) => ad.imageData || ad.videoFrames?.length);
@@ -539,6 +584,9 @@ function normalizeCompare(value = {}, context, ads) {
       what_to_fix: arrayOr(ad.what_to_fix, ["Fix the weakest score area before launch."]),
       suggested_hook_rewrite: String(ad.suggested_hook_rewrite || "Stop guessing which ad will convert."),
       creative_recommendation: String(ad.creative_recommendation || "Improve first-frame clarity and visual hierarchy."),
+      attention_potential: videoPotentials.includes(ad.attention_potential) ? ad.attention_potential : ads[index]?.creativeType === "video" ? "Medium" : "",
+      conversion_potential: videoPotentials.includes(ad.conversion_potential) ? ad.conversion_potential : ads[index]?.creativeType === "video" ? "Medium" : "",
+      video_verdict: videoVerdicts.includes(ad.video_verdict) ? ad.video_verdict : ads[index]?.creativeType === "video" ? "Revise opening" : "",
     })),
     ranking: Array.isArray(value.ranking) && value.ranking.length ? value.ranking : fallback.ranking,
     winner: value.winner || fallback.winner,

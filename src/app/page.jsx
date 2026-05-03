@@ -61,7 +61,7 @@ export default function Home() {
           </div>
           <div className="reveal-up reveal-delay-5 mt-8 flex flex-wrap items-center justify-center gap-4 text-xs font-bold uppercase tracking-[0.16em] text-slate-500">
             <span className="inline-flex items-center gap-2"><ShieldCheck size={15} /> Auth connected</span>
-            <span>Copy + image + video + links</span>
+            <span>Copy + image + Video Hook Audit + links</span>
             <span>Compare up to 4 ads</span>
           </div>
         </div>
@@ -76,7 +76,7 @@ export default function Home() {
 
         <div className="home-step-grid mt-5 grid w-full max-w-6xl gap-3 text-left md:grid-cols-3">
           {[
-            ["01", "Drop the asset", "Copy, image, video, or post link."],
+            ["01", "Drop the asset", "Copy, image, video hook, or post link."],
             ["02", "Get the verdict", "Run, revise, or reject with score reasons."],
             ["03", "Pick the winner", "Compare ads before spend gets real."],
           ].map(([number, title, detail]) => (
@@ -101,7 +101,7 @@ export default function Home() {
           <div className="grid gap-4 sm:grid-cols-3">
             {[
               ["Free", "$0", "5 text/link analyses"],
-              ["Plus", "$15", "Image + video audits"],
+              ["Plus", "$15", "Image + Video Hook Audit"],
               ["Pro", "$39", "750 credits"],
             ].map(([name, price, detail]) => (
               <div key={name} className="depth-card rounded-lg border border-white/10 bg-white/[0.04] p-5">
@@ -140,7 +140,7 @@ export default function Home() {
                 <span className="rounded-full border border-white/10 bg-white px-3 py-1 text-xs font-black text-black">Premium</span>
               </div>
               <div className="space-y-4">
-                {["Strict scoring by platform and objective", "Specific fixes under each score", "Separate copy, creative, link, and video context", "Run, revise, or reject verdict"].map((item) => (
+                {["Strict scoring by platform and objective", "Specific fixes under each score", "Separate copy, creative, link, and video hook context", "Run, revise, or reject verdict"].map((item) => (
                   <div key={item} className="flex items-center gap-3 rounded-xl border border-white/10 bg-black/30 p-3 text-sm text-slate-200">
                     <CheckCircle2 size={16} className="text-white" />
                     {item}
@@ -186,8 +186,27 @@ export default function Home() {
             </div>
             <div className="flex gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-5">
               <Sparkles className="mt-1 text-cyan-300" size={20} />
-              <p className="text-sm leading-6 text-slate-300">Every result includes score reasons, rewrites, CTA improvements, and creative/video fixes.</p>
+              <p className="text-sm leading-6 text-slate-300">Every result includes score reasons, rewrites, CTA improvements, and Video Hook Audit fixes.</p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="glass-section border-t border-white/10 bg-slate-950 px-6 py-16">
+        <div className="mx-auto grid max-w-6xl gap-6 md:grid-cols-[0.95fr_1.05fr] md:items-center">
+          <div>
+            <p className="mb-3 text-sm font-bold uppercase tracking-[0.18em] text-cyan-300">Video Hook Audit</p>
+            <h2 className="text-3xl font-black tracking-tight md:text-4xl">Score your video hook before you launch.</h2>
+            <p className="mt-4 max-w-xl text-sm leading-7 text-slate-400">
+              ADNex reviews sampled key frames to evaluate scroll-stop potential, visual clarity, offer visibility, and CTA strength.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {["See if your first frames stop the scroll", "Identify weak offer visibility", "Separate attention potential from conversion potential", "Get fixes for the opening seconds"].map((item) => (
+              <div key={item} className="depth-card rounded-lg border border-white/10 bg-white/[0.04] p-5 text-sm font-bold leading-6 text-slate-200">
+                {item}
+              </div>
+            ))}
           </div>
         </div>
       </section>

@@ -33,7 +33,7 @@ const plans = [
     features: [
       "150 credits per month",
       "AI image analysis included",
-      "Video audit scorecards",
+      "Video Hook Audit included",
       "Compare up to 4 ads",
       "Creative recommendations",
       "Saved analysis history",
@@ -50,7 +50,7 @@ const plans = [
     features: [
       "750 credits per month",
       "Everything in Plus",
-      "Advanced video audit workflow",
+      "Higher-volume Video Hook Audits",
       "Campaign folders",
       "Brand and audience presets",
       "Exportable reports",
@@ -79,6 +79,9 @@ export default function PricingPage() {
           </h1>
           <p className="mt-5 text-lg leading-8 text-slate-300">
             Start free while we validate the product. Upgrade when you need paid creative audits and more monthly credits.
+          </p>
+          <p className="mt-3 text-sm leading-6 text-slate-400">
+            Video Hook Audit costs 8 credits because it uses multiple sampled key frames to judge scroll-stop potential and offer visibility.
           </p>
         </div>
 

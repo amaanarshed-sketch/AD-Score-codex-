@@ -12,12 +12,11 @@ const sections = [
 ];
 
 const videoSections = [
-  ["first_three_seconds", "First 3 Seconds"],
-  ["visual_flow", "Visual Flow"],
-  ["on_screen_text", "On-Screen Text"],
-  ["product_clarity", "Product Clarity"],
-  ["cta_timing", "CTA Timing"],
-  ["platform_native_feel", "Platform-Native Feel"],
+  ["hook_strength", "Hook Strength"],
+  ["visual_clarity", "Visual Clarity"],
+  ["offer_visibility", "Offer Visibility"],
+  ["creative_structure", "Creative Structure"],
+  ["cta_visibility", "CTA Visibility"],
 ];
 
 function verdictFromScore(score = 0) {
@@ -41,7 +40,7 @@ function inputBadges(summary = {}) {
   return [
     [summary.has_copy, "Copy provided", FileText],
     [summary.creative_type === "image", "Image provided", Clapperboard],
-    [summary.creative_type === "video", "Video provided", Clapperboard],
+    [summary.creative_type === "video", "Video Hook Audit", Clapperboard],
     [summary.has_link, "Link provided", Link2],
   ].filter(([enabled]) => enabled);
 }
@@ -144,16 +143,37 @@ function ListSection({ title, icon: Icon, items, tone = "neutral" }) {
   );
 }
 
-function VideoAudit({ video }) {
-  if (!video || video.audit_type === "none") return null;
+function potentialTone(value = "") {
+  if (value === "High") return "run";
+  if (value === "Medium") return "revise";
+  return "reject";
+}
+
+function VideoHookAudit({ video }) {
+  if (!video || video.analysis_mode === "none" || video.audit_type === "none") return null;
+  const frameCount = Number(video.frame_count || 0);
+  const analysisMode = video.analysis_mode === "sampled_key_frames" ? "Sampled key frames" : "Limited video context";
 
   return (
     <section className="ui-card">
       <h3 className="ui-section-title">
         <PlaySquare size={16} />
-        Video Audit
+        Video Hook Audit
       </h3>
-      <p className="ui-muted mt-2 text-sm leading-6">{video.summary}</p>
+      <p className="ui-muted mt-2 text-sm leading-6">
+        Video Hook Audit uses sampled key frames to evaluate scroll-stop potential, visual clarity, and offer visibility. It does not analyze full video, audio, or transcripts yet.
+      </p>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        <span className="input-summary__badge">Analysis mode: {analysisMode}</span>
+        <span className="input-summary__badge">Frame count: {frameCount}</span>
+        <span className={`verdict-badge verdict-badge--${potentialTone(video.attention_potential)}`}>
+          Attention Potential: {video.attention_potential || "Low"}
+        </span>
+        <span className={`verdict-badge verdict-badge--${potentialTone(video.conversion_potential)}`}>
+          Conversion Potential: {video.conversion_potential || "Low"}
+        </span>
+      </div>
 
       <div className="mt-4 grid gap-3 md:grid-cols-2">
         {videoSections.map(([key, title]) => (
@@ -161,9 +181,10 @@ function VideoAudit({ video }) {
         ))}
       </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <ListSection title="Retention Risks" icon={AlertTriangle} items={video.retention_risks} tone="reject" />
-        <ListSection title="Scene Fixes" icon={Lightbulb} items={video.scene_recommendations} />
+      <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.035] p-4">
+        <p className="text-xs font-black uppercase tracking-[0.14em] text-[color:var(--text-muted)]">Final Video Verdict</p>
+        <p className="mt-2 text-sm font-bold leading-6 text-[color:var(--text-primary)]">{video.video_verdict || "Revise opening"}</p>
+        <p className="ui-muted mt-2 text-xs leading-5">{video.limitations || "Based on sampled key frames only. Audio/transcript/full video sequence not analyzed."}</p>
       </div>
     </section>
   );
@@ -217,7 +238,7 @@ export default function ScoreResult({ result, context, label, recommended = fals
       {!compact ? (
         <>
           <ListSection title="Better Hook Ideas" icon={Sparkles} items={result.hook_rewrites} />
-          <VideoAudit video={result.video_analysis} />
+          <VideoHookAudit video={result.video_hook_audit || result.video_analysis} />
           <ListSection title="Creative Recommendations" icon={Clapperboard} items={result.creative_recommendations} />
         </>
       ) : null}
