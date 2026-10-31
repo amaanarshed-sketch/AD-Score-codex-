@@ -24,7 +24,10 @@ async function syncSubscription(supabase, payload, eventName) {
   if (!userId) return;
 
   const variantId = attributes.variant_id || attributes.first_subscription_item?.variant_id;
-  const plan = normalizePlan(custom.plan || planFromVariantId(variantId));
+  // The subscription's current variant is the source of truth: custom_data.plan is frozen at
+  // first checkout, so it goes stale after an upgrade or downgrade in the customer portal.
+  const variantPlan = planFromVariantId(variantId);
+  const plan = normalizePlan(variantPlan !== "free" ? variantPlan : custom.plan);
   const monthlyCredits = PLAN_CONFIG[plan].monthlyCredits;
   const { periodStart, periodEnd } = getPeriodBounds();
 
