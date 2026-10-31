@@ -1,7 +1,6 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import { getPeriodBounds } from "../../../../lib/billingServer";
-import { normalizePlan, planFromVariantId, PLAN_CONFIG } from "../../../../lib/plans";
+import { normalizePlan, planFromVariantId } from "../../../../lib/plans";
 import { getSupabaseAdminClient } from "../../../../lib/supabaseAdmin";
 
 function verifySignature(rawBody, signature) {
@@ -28,8 +27,6 @@ async function syncSubscription(supabase, payload, eventName) {
   // first checkout, so it goes stale after an upgrade or downgrade in the customer portal.
   const variantPlan = planFromVariantId(variantId);
   const plan = normalizePlan(variantPlan !== "free" ? variantPlan : custom.plan);
-  const monthlyCredits = PLAN_CONFIG[plan].monthlyCredits;
-  const { periodStart, periodEnd } = getPeriodBounds();
 
   await supabase.from("profiles").upsert({
     id: userId,
@@ -54,19 +51,8 @@ async function syncSubscription(supabase, payload, eventName) {
     { onConflict: "lemon_subscription_id" },
   );
 
-  if (["subscription_created", "subscription_payment_success", "subscription_resumed", "subscription_plan_changed"].includes(eventName)) {
-    await supabase.from("credit_balances").upsert(
-      {
-        user_id: userId,
-        plan,
-        monthly_credits: monthlyCredits,
-        used_credits: 0,
-        period_start: periodStart,
-        period_end: periodEnd,
-      },
-      { onConflict: "user_id,period_start" },
-    );
-  }
+  // Credits are never reset here. A new credit period starts when renews_at advances
+  // (see getSubscriptionPeriodBounds), so pause/resume or plan changes can't refill credits.
 }
 
 export async function POST(request) {
@@ -80,7 +66,9 @@ export async function POST(request) {
   const payload = JSON.parse(rawBody);
   const eventName = payload?.meta?.event_name || request.headers.get("x-event-name") || "";
 
-  if (eventName.startsWith("subscription_")) {
+  // subscription_payment_* events carry subscription-invoices, not subscriptions; storing them
+  // would create bogus subscription rows keyed by invoice id. subscription_updated covers renewals.
+  if (eventName.startsWith("subscription_") && payload?.data?.type === "subscriptions") {
     await syncSubscription(supabase, payload, eventName);
   }
 

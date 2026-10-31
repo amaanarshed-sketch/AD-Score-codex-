@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { canUseCreativeAi, canUseVideoAudit, creditsForRequest, normalizePlan, PLAN_CONFIG } from "./plans";
 import { getUserFromRequest, hasSupabaseServerConfig } from "./supabaseAdmin";
 
-const activeStatuses = new Set(["active", "on_trial", "paused"]);
+// cancelled keeps access until ends_at (Lemon Squeezy then sends subscription_expired);
+// past_due keeps access while Lemon Squeezy retries the payment.
+const activeStatuses = new Set(["active", "on_trial", "cancelled", "past_due"]);
 
 export function hasLemonSqueezyConfig() {
   return Boolean(
@@ -23,6 +25,26 @@ export function getPeriodBounds(now = new Date()) {
     periodStart: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString(),
     periodEnd: new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1)).toISOString(),
   };
+}
+
+function addUtcMonths(date, months) {
+  const result = new Date(date);
+  const day = result.getUTCDate();
+  result.setUTCDate(1);
+  result.setUTCMonth(result.getUTCMonth() + months);
+  const lastDay = new Date(Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)).getUTCDate();
+  result.setUTCDate(Math.min(day, lastDay));
+  return result;
+}
+
+// Paid credit periods follow the subscription's billing cycle: the month ending at renews_at.
+// The period only moves when Lemon Squeezy advances renews_at after a successful renewal, so
+// past_due users keep their current (used) balance instead of getting fresh credits.
+export function getSubscriptionPeriodBounds(subscription, now = new Date()) {
+  const anchor = subscription?.renews_at || subscription?.ends_at;
+  if (!anchor || Number.isNaN(Date.parse(anchor))) return getPeriodBounds(now);
+  const periodEnd = new Date(anchor);
+  return { periodStart: addUtcMonths(periodEnd, -1).toISOString(), periodEnd: periodEnd.toISOString() };
 }
 
 export function demoBillingStatus() {
@@ -55,6 +77,7 @@ function statusPayload({ plan, status, balance, subscription, configured = true 
     remainingCredits: Math.max(0, monthlyCredits - usedCredits),
     periodStart: balance?.period_start || "",
     periodEnd: balance?.period_end || "",
+    balanceId: balance?.id || "",
     customerPortalUrl: subscription?.customer_portal_url || "",
   };
 }
@@ -72,7 +95,7 @@ export async function getBillingStatusForUser(supabase, user) {
     .maybeSingle();
 
   const plan = normalizePlan(subscription?.plan || "free");
-  const { periodStart, periodEnd } = getPeriodBounds();
+  const { periodStart, periodEnd } = subscription ? getSubscriptionPeriodBounds(subscription) : getPeriodBounds();
   const monthlyCredits = PLAN_CONFIG[plan].monthlyCredits;
 
   let { data: balance } = await supabase
@@ -179,13 +202,11 @@ export async function authorizeAnalysisRequest(request, { compare = false, ad, a
 }
 
 export async function reserveUsage(auth, featureType, metadata = {}) {
-  if (!auth?.supabase || !auth?.user || auth.demo) return null;
-  const { periodStart } = getPeriodBounds();
+  if (!auth?.supabase || !auth?.user || auth.demo || !auth.billing?.balanceId) return null;
   const { data: balance } = await auth.supabase
     .from("credit_balances")
     .select("*")
-    .eq("user_id", auth.user.id)
-    .eq("period_start", periodStart)
+    .eq("id", auth.billing.balanceId)
     .single();
 
   if (!balance) return null;
@@ -209,13 +230,12 @@ export async function reserveUsage(auth, featureType, metadata = {}) {
 }
 
 export async function refundUsage(auth, reservation, reason = "ai_failed") {
-  if (!auth?.supabase || !auth?.user || auth.demo || !reservation) return null;
-  const { periodStart } = getPeriodBounds();
+  const balanceId = reservation?.balance?.id || auth?.billing?.balanceId;
+  if (!auth?.supabase || !auth?.user || auth.demo || !reservation || !balanceId) return null;
   const { data: balance } = await auth.supabase
     .from("credit_balances")
     .select("*")
-    .eq("user_id", auth.user.id)
-    .eq("period_start", periodStart)
+    .eq("id", balanceId)
     .single();
 
   if (!balance) return null;
