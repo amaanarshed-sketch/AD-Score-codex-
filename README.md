@@ -49,7 +49,7 @@ Run `supabase/schema.sql` in Supabase before enabling live auth, credits, or Lem
 - Images are compressed client-side before vision analysis.
 - Video Hook Audit uses up to 4 sampled key frames only; full video, audio, and transcripts are not analyzed in v1.
 - Video Hook Audit costs 8 credits because it sends multiple compressed frames to the vision model.
-- If OpenAI fails or returns invalid JSON, the app falls back to mock output and refunds reserved credits.
+- If OpenAI fails or returns invalid JSON, the API refunds reserved credits and returns a 502 error. Mock output is only used in demo mode (no `OPENAI_API_KEY`).
 
 ## Scripts
 

@@ -779,6 +779,11 @@ function checkRateLimit(request, auth) {
   return null;
 }
 
+// Paid analyses never fall back to mock scores: users would mistake them for real AI output.
+function aiFailedResponse() {
+  return NextResponse.json({ error: "AI analysis failed, so no credits were used. Please try again in a moment." }, { status: 502 });
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -797,9 +802,9 @@ export async function POST(request) {
         const result = process.env.OPENAI_API_KEY ? await compareWithOpenAI(context, ads, auth.allowImageAnalysis) : compareMock(context, ads);
         return NextResponse.json(result);
       } catch (error) {
-        console.error("Compare AI failed, returning mock:", error);
+        console.error("Compare AI failed:", error);
         await refundUsage(auth, reservation, "compare_ai_failed");
-        return NextResponse.json(compareMock(context, ads));
+        return aiFailedResponse();
       }
     }
 
@@ -815,9 +820,9 @@ export async function POST(request) {
       const result = await analyzeSingle(context, ad, auth.allowImageAnalysis);
       return NextResponse.json(result);
     } catch (error) {
-      console.error("Analyze AI failed, returning mock:", error);
+      console.error("Analyze AI failed:", error);
       await refundUsage(auth, reservation, "single_ai_failed");
-      return NextResponse.json(mockSingle(context, ad));
+      return aiFailedResponse();
     }
   } catch (error) {
     console.error("Analyze route error:", error);

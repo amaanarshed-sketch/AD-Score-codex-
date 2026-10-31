@@ -60,7 +60,7 @@ export default function DashboardPage() {
       });
       router.push("/results");
     } catch (err) {
-      setError(err.message || "Something went wrong. Mock data should still render if the API is reachable.");
+      setError(err.message || "Something went wrong while analyzing the ad.");
     } finally {
       setLoading(false);
     }
