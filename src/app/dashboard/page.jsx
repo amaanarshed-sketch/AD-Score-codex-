@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { BadgeCheck, GitCompareArrows, Loader2, Settings2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import AdInputBlock, { apiAdPayload, emptyAdInput, validateAdInput } from "../../components/AdInputBlock";
+import CampaignContextFields, { objectives, platforms } from "../../components/CampaignContextFields";
 import Navbar from "../../components/Navbar";
 import { useAuth } from "../../components/AuthProvider";
 import { saveAnalysisHistory } from "../../lib/history";
-
-const platforms = ["Meta / Facebook / Instagram", "TikTok", "Google Ads", "LinkedIn"];
-const objectives = ["Conversions", "Leads", "Engagement", "Traffic", "Awareness"];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -45,7 +43,8 @@ export default function DashboardPage() {
       if (!response.ok) throw new Error(data.error || "Analysis failed.");
 
       const storedAd = { ...ad, imageData: "", videoFrames: [], creativePreview: "" };
-      sessionStorage.setItem("adnex:last-result", JSON.stringify({ result: data, ad: storedAd, context }));
+      const createdAt = new Date().toISOString();
+      sessionStorage.setItem("adnex:last-result", JSON.stringify({ result: data, ad: storedAd, context, createdAt }));
       saveAnalysisHistory({
         type: "single",
         title: storedAd.adCopy?.slice(0, 72) || storedAd.creativeFilename || storedAd.postLink || "Single ad analysis",
@@ -80,99 +79,49 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="app-page min-h-screen bg-slate-950 text-white">
+    <>
       <Navbar />
-
-      <section className="mx-auto w-full max-w-6xl px-6 py-8">
-        <div className="mb-6 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+      <main className="shell page">
+        <section className="page-head">
           <div>
-            <p className="app-eyebrow text-sm font-black uppercase tracking-[0.18em] text-cyan-300">Single Analysis</p>
-            <h1 className="app-title mt-3 text-3xl font-black tracking-tight md:text-5xl">Score one ad before launch.</h1>
-            <p className="app-muted mt-3 max-w-2xl text-sm leading-6 text-slate-400 md:text-base">
-              Provide copy, a creative, a post link, or any combination. Adnex will judge the campaign context and return a strict launch recommendation.
-            </p>
+            <p className="eyebrow">Analyze · Single ad</p>
+            <h1 className="h1">Score one ad before it spends a dollar.</h1>
+            <p className="lede">Add copy, a creative, a post link, or any mix. Adnex reads it against your campaign and returns Run, Revise or Reject.</p>
           </div>
-          <Link
-            href="/compare"
-            className="app-secondary-action inline-flex self-start items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10"
-          >
-            <GitCompareArrows size={16} />
-            Compare Ads
-          </Link>
-        </div>
+          <Link href="/compare" className="btn">Compare 2–4 ads instead</Link>
+        </section>
 
-        <section className="mx-auto max-w-5xl">
-          <div className="app-card workbench-card mb-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
-            <div className="mb-4 flex items-center gap-3">
-              <span className="app-icon-box flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-white">
-                <Settings2 size={17} />
-              </span>
-              <div>
-                <p className="app-eyebrow text-xs font-black uppercase tracking-[0.16em] text-slate-400">Campaign Context</p>
-                <h2 className="app-title text-lg font-black text-white">Set the basics</h2>
-              </div>
-            </div>
-
-            <div className="grid gap-3 lg:grid-cols-[1fr_0.8fr_1.35fr]">
-              <label className="block">
-                <span className="app-label mb-2 block text-sm font-bold text-slate-200">Platform</span>
-                <select
-                  value={platform}
-                  onChange={(event) => handlePlatformChange(event.target.value)}
-                  className="app-control w-full rounded-lg border p-3 text-sm outline-none transition"
-                >
-                  {platforms.map((item) => (
-                    <option key={item} value={item}>{item}</option>
-                  ))}
-                </select>
-                {platformSource.type === "link" ? (
-                  <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-200">
-                    <BadgeCheck size={13} />
-                    {platformSource.label}
-                  </div>
-                ) : null}
-              </label>
-
-              <label className="block">
-                <span className="app-label mb-2 block text-sm font-bold text-slate-200">Objective</span>
-                <select
-                  value={objective}
-                  onChange={(event) => setObjective(event.target.value)}
-                  className="app-control w-full rounded-lg border p-3 text-sm outline-none transition"
-                >
-                  {objectives.map((item) => (
-                    <option key={item} value={item}>{item}</option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="block">
-                <span className="app-label mb-2 block text-sm font-bold text-slate-200">Audience</span>
-                <input
-                  value={audience}
-                  onChange={(event) => setAudience(event.target.value)}
-                  placeholder="Example: ecommerce shoppers in Sri Lanka"
-                  className="app-control w-full rounded-lg border p-3 text-sm outline-none transition"
-                />
-              </label>
-            </div>
+        <section className="section" style={{ display: "grid", gap: 20 }}>
+          <div className="section-head" style={{ marginBottom: 0 }}>
+            <h2 className="h2">Campaign</h2>
+            <span className="meta">STEP 01 OF 02</span>
           </div>
+          <CampaignContextFields
+            platform={platform}
+            platformSource={platformSource}
+            objective={objective}
+            audience={audience}
+            onPlatformChange={handlePlatformChange}
+            onObjectiveChange={setObjective}
+            onAudienceChange={setAudience}
+          />
+        </section>
 
-          <AdInputBlock title="Ad Input" value={ad} onChange={handleAdChange} />
+        <section className="section" style={{ display: "grid", gap: 20, borderBottom: 0 }}>
+          <div className="section-head" style={{ marginBottom: 0 }}>
+            <h2 className="h2">Ad</h2>
+            <span className="meta">STEP 02 OF 02</span>
+          </div>
+          <AdInputBlock title="Ad A" value={ad} onChange={handleAdChange} />
 
-          {error ? <p className="mt-4 rounded-lg border border-rose-400/25 bg-rose-400/10 p-3 text-sm text-rose-200">{error}</p> : null}
+          {error ? <p className="notice notice--error">{error}</p> : null}
 
-          <button
-            type="button"
-            onClick={analyze}
-            disabled={loading}
-            className="app-primary-action app-floating-action mt-6 inline-flex w-full items-center justify-center gap-2 rounded-full bg-cyan-300 px-6 py-4 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            {loading ? <Loader2 className="animate-spin" size={17} /> : null}
-            {loading ? "Analyzing..." : "Analyze Ad"}
+          <button type="button" onClick={analyze} disabled={loading} className="btn btn--accent btn--lg btn--block">
+            {loading ? <Loader2 className="spin" size={17} /> : null}
+            {loading ? "Analyzing…" : "Analyze ad →"}
           </button>
         </section>
-      </section>
-    </main>
+      </main>
+    </>
   );
 }

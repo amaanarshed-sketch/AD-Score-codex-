@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, LogIn, LogOut, UserPlus } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 
 export default function AuthCard() {
@@ -49,121 +48,99 @@ export default function AuthCard() {
 
   if (!configured) {
     return (
-      <section className="rounded-xl border border-amber-300/25 bg-amber-300/10 p-5">
-        <h2 className="text-sm font-black uppercase tracking-[0.16em] text-amber-200">Auth not configured</h2>
-        <p className="mt-3 text-sm leading-6 text-slate-300">
-          Add the Supabase environment variables in Vercel to enable accounts, paid checkout, and credit tracking.
-        </p>
+      <section className="panel" style={{ display: "grid", gap: 10 }}>
+        <p className="eyebrow tone-rev">Accounts not configured</p>
+        <p className="small">Add the Supabase environment variables to turn on accounts, paid checkout and credit tracking.</p>
       </section>
     );
   }
 
   if (loading) {
-    return <section className="auth-card app-card rounded-xl border border-white/10 bg-white/[0.04] p-5 text-sm text-slate-400">Checking account...</section>;
+    return <section className="panel"><p className="meta">CHECKING ACCOUNT…</p></section>;
   }
 
   if (user) {
     const metadata = user.user_metadata || {};
     const displayName = metadata.full_name || metadata.name || user.email?.split("@")[0] || "Adnex user";
-    const initial = displayName.charAt(0).toUpperCase();
 
     return (
-      <section className="auth-card app-card rounded-xl border border-white/10 bg-white/[0.04] p-5">
-        <h2 className="text-sm font-black uppercase tracking-[0.16em] text-slate-400">Account</h2>
-        <div className="account-summary mt-4 flex items-center gap-4 rounded-xl border border-white/10 bg-slate-950/70 p-4">
-          <span className="account-avatar account-avatar--large flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/15 text-xl font-black">
-            {initial}
-          </span>
-          <div className="min-w-0">
-            <p className="truncate text-base font-black text-white">{displayName}</p>
-            <p className="mt-1 break-all text-sm text-slate-400">{user.email}</p>
-            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-2.5 py-1 text-xs font-black text-emerald-200">
-              <CheckCircle2 size={13} />
-              Signed in
-            </p>
+      <section className="panel" style={{ display: "grid", gap: 20 }}>
+        <p className="eyebrow">Account</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
+          <span className="avatar" style={{ width: 44, height: 44, fontSize: 16 }}>{displayName.charAt(0).toUpperCase()}</span>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ margin: 0, fontWeight: 500, fontSize: 16 }}>{displayName}</p>
+            <p className="meta" style={{ overflowWrap: "anywhere" }}>{user.email}</p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={signOut}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10"
-        >
-          <LogOut size={16} />
-          Sign out
-        </button>
+        <button type="button" onClick={signOut} className="btn btn--block">Sign out</button>
       </section>
     );
   }
 
   return (
-    <section className="auth-card app-card rounded-xl border border-white/10 bg-white/[0.04] p-5">
-      <div className="mb-4 flex gap-2">
+    <section className="panel" style={{ display: "grid", gap: 18 }}>
+      <div style={{ display: "flex", gap: 0, borderBottom: "1px solid var(--line)" }} role="tablist">
         {[
-          ["signin", "Sign in", LogIn],
-          ["signup", "Sign up", UserPlus],
-        ].map(([key, label, Icon]) => (
+          ["signin", "Sign in"],
+          ["signup", "Create account"],
+        ].map(([key, label]) => (
           <button
             key={key}
             type="button"
+            role="tab"
+            aria-selected={mode === key}
             onClick={() => setMode(key)}
-            className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-black transition ${
-              mode === key ? "bg-cyan-300 text-slate-950" : "border border-white/10 bg-white/5 text-white hover:bg-white/10"
-            }`}
+            style={{
+              background: "none",
+              border: 0,
+              borderBottom: `2px solid ${mode === key ? "var(--ink)" : "transparent"}`,
+              color: mode === key ? "var(--ink)" : "var(--ink3)",
+              padding: "8px 0",
+              marginRight: 20,
+              marginBottom: -1,
+              font: "500 14px var(--sans)",
+              cursor: "pointer",
+            }}
           >
-            <Icon size={15} />
             {label}
           </button>
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={googleLogin}
-        disabled={busy}
-        className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-black text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-45"
-      >
-        <span className="font-black">G</span>
+      <button type="button" onClick={googleLogin} disabled={busy} className="btn btn--block">
         Continue with Google
       </button>
 
-      <div className="mb-4 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-600">
-        <span className="h-px flex-1 bg-white/10" />
-        Email
-        <span className="h-px flex-1 bg-white/10" />
+      <div className="eyebrow" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <span style={{ height: 1, flex: 1, background: "var(--line)" }} />
+        or email
+        <span style={{ height: 1, flex: 1, background: "var(--line)" }} />
       </div>
 
-      <form onSubmit={submit} className="space-y-3">
-        <label className="block">
-          <span className="mb-2 block text-sm font-bold text-slate-200">Email</span>
-          <input
-            type="email"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            className="app-control w-full rounded-lg border p-3 text-sm outline-none transition"
-          />
+      <form onSubmit={submit} style={{ display: "grid", gap: 14 }}>
+        <label className="field">
+          <span className="field__label">Email</span>
+          <input type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="input" />
         </label>
-        <label className="block">
-          <span className="mb-2 block text-sm font-bold text-slate-200">Password</span>
+        <label className="field">
+          <span className="field__label">Password</span>
           <input
             type="password"
             required
             minLength={6}
+            autoComplete={mode === "signup" ? "new-password" : "current-password"}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
-            className="app-control w-full rounded-lg border p-3 text-sm outline-none transition"
+            className="input"
           />
         </label>
-        <button
-          type="submit"
-          disabled={busy}
-          className="inline-flex w-full items-center justify-center rounded-lg bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          {busy ? "Working..." : mode === "signup" ? "Create account" : "Sign in"}
+        <button type="submit" disabled={busy} className="btn btn--primary btn--block btn--lg">
+          {busy ? "Working…" : mode === "signup" ? "Create account" : "Sign in"}
         </button>
       </form>
 
-      {message ? <p className="mt-3 rounded-lg border border-white/10 bg-slate-950/70 p-3 text-sm leading-6 text-slate-300">{message}</p> : null}
+      {message ? <p className="notice">{message}</p> : null}
     </section>
   );
 }

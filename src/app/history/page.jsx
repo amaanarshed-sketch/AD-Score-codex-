@@ -1,99 +1,99 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ArrowRight, BarChart3, Clock3, GitCompareArrows, Sparkles } from "lucide-react";
+import { useRouter } from "next/navigation";
 import Navbar from "../../components/Navbar";
-import ProductStatus from "../../components/ProductStatus";
-import { getAnalysisHistory } from "../../lib/history";
+import { verdictTone } from "../../components/ScoreResult";
+import { useBrowserStorage, useHydrated } from "../../lib/useBrowserStorage";
+
+const historyKeys = ["adnex:analysis-history", "adscore:analysis-history"];
+const noHistory = [];
 
 function formatDate(value) {
   try {
-    return new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
+    const date = new Date(value);
+    const day = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric" }).format(date);
+    const time = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(date);
+    return `${day} · ${time}`.toUpperCase();
   } catch {
-    return "Recent";
+    return "RECENT";
   }
 }
 
-function actionColor(action = "") {
-  if (action.includes("Run")) return "text-emerald-300";
-  if (action.includes("Reject") || action.includes("Do not")) return "text-rose-300";
-  return "text-amber-300";
-}
-
 export default function HistoryPage() {
-  const [history] = useState(() => getAnalysisHistory());
+  const router = useRouter();
+  const hydrated = useHydrated();
+  const stored = useBrowserStorage("local", historyKeys, noHistory);
+  const history = Array.isArray(stored) ? stored : noHistory;
+
+  function openReport(item) {
+    sessionStorage.setItem(
+      "adnex:last-result",
+      JSON.stringify({ result: item.result, ad: item.ad || {}, context: { platform: item.platform, objective: item.objective, audience: item.audience }, createdAt: item.createdAt }),
+    );
+    router.push("/results");
+  }
 
   return (
-    <main className="app-page min-h-screen bg-slate-950 text-white">
+    <>
       <Navbar />
-
-      <section className="mx-auto w-full max-w-6xl px-6 py-10">
-        <div className="mb-8 flex flex-col justify-between gap-5 md:flex-row md:items-end">
+      <main className="shell page">
+        <section className="page-head">
           <div>
-            <p className="app-eyebrow text-sm font-black uppercase tracking-[0.18em] text-cyan-300">Saved Locally</p>
-            <h1 className="app-title mt-3 text-4xl font-black tracking-tight md:text-5xl">Analysis history</h1>
-            <p className="app-muted mt-3 max-w-2xl text-slate-400">
-              Recent ad scores are saved in this browser so you can compare decisions without setting up accounts or a database yet.
-            </p>
+            <p className="eyebrow">Reports · saved in this browser</p>
+            <h1 className="h1">Every reading, in one place.</h1>
+            <p className="lede">Your last 20 analyses are kept on this device. Open a single-ad report to see the full breakdown again.</p>
           </div>
-          <div className="flex flex-col gap-3 sm:flex-row">
-            <Link href="/dashboard" className="app-primary-action inline-flex items-center justify-center gap-2 rounded-lg bg-cyan-300 px-4 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
-              <Sparkles size={16} />
-              Analyze Ad
-            </Link>
-            <Link href="/compare" className="app-secondary-action inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white transition hover:bg-white/10">
-              <GitCompareArrows size={16} />
-              Compare Ads
-            </Link>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link href="/compare" className="btn">Compare ads</Link>
+            <Link href="/dashboard" className="btn btn--primary">Analyze an ad</Link>
           </div>
-        </div>
+        </section>
 
-        <div className="mb-6">
-          <ProductStatus />
-        </div>
-
-        {history.length ? (
-          <div className="grid gap-4">
-            {history.map((item) => (
-              <article key={item.id} className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  <div>
-                    <div className="mb-3 flex flex-wrap items-center gap-2">
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950 px-3 py-1 text-xs font-bold text-slate-300">
-                        {item.type === "compare" ? <GitCompareArrows size={13} /> : <BarChart3 size={13} />}
-                        {item.type === "compare" ? "Compare" : "Single"}
-                      </span>
-                      <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-950 px-3 py-1 text-xs font-bold text-slate-400">
-                        <Clock3 size={13} />
-                        {formatDate(item.createdAt)}
-                      </span>
-                    </div>
-                    <h2 className="text-xl font-black text-white">{item.title}</h2>
-                    <p className="mt-2 text-sm leading-6 text-slate-400">
-                      {item.platform} · {item.objective} · {item.audience || "Audience not provided"}
-                    </p>
-                  </div>
-                  <div className="grid min-w-44 gap-2 rounded-lg border border-white/10 bg-slate-950/70 p-4">
-                    <div className="text-3xl font-black text-cyan-300">{item.score || 0}<span className="text-sm text-slate-500">/100</span></div>
-                    <div className={`text-sm font-bold ${actionColor(item.action)}`}>{item.action || "Revise"}</div>
-                    <div className="text-xs font-semibold text-slate-500">Confidence: {item.confidence || "Low"}</div>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
+        {!hydrated ? null : history.length ? (
+          <section className="section">
+            <div className="table-wrap">
+              <table className="table" style={{ minWidth: 720 }}>
+                <thead>
+                  <tr>
+                    <th>Date</th><th>Ad</th><th>Type</th><th>Score</th><th>Verdict</th><th>Confidence</th><th aria-label="Open" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((item) => {
+                    const canOpen = item.type !== "compare" && item.result;
+                    const verdict = item.type === "compare" ? "Compare" : item.action || "Revise";
+                    return (
+                      <tr key={item.id}>
+                        <td className="meta" style={{ whiteSpace: "nowrap" }}>{formatDate(item.createdAt)}</td>
+                        <td>
+                          <div style={{ fontWeight: 500, maxWidth: 360 }}>{item.title}</div>
+                          <div className="meta" style={{ marginTop: 4 }}>{[item.platform, item.objective].filter(Boolean).join(" · ").toUpperCase()}</div>
+                        </td>
+                        <td className="meta">{item.type === "compare" ? "COMPARE" : "SINGLE"}</td>
+                        <td className="num">{item.score || 0}<span style={{ color: "var(--ink3)", fontSize: 12 }}>/100</span></td>
+                        <td className={item.type === "compare" ? "" : `tone-${verdictTone(verdict)}`} style={{ fontWeight: 500, maxWidth: 260 }}>
+                          {item.type === "compare" ? <span className="small">{item.action}</span> : verdict}
+                        </td>
+                        <td>{item.confidence || "Low"}</td>
+                        <td style={{ textAlign: "right" }}>
+                          {canOpen ? <button type="button" className="btn" onClick={() => openReport(item)}>Open</button> : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
         ) : (
-          <section className="app-card rounded-xl border border-white/10 bg-white/[0.04] p-8 text-center">
-            <h2 className="app-title text-2xl font-black">No saved analyses yet</h2>
-            <p className="app-muted mt-3 text-slate-400">Run a single analysis or compare ads, then your recent results will appear here.</p>
-            <Link href="/dashboard" className="app-primary-action mt-6 inline-flex items-center gap-2 rounded-lg bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
-              Start first analysis
-              <ArrowRight size={16} />
-            </Link>
+          <section className="section" style={{ display: "grid", gap: 16, justifyItems: "start" }}>
+            <h2 className="h2">No reports yet.</h2>
+            <p className="body">Run a single analysis or compare ads, and your recent results will appear here.</p>
+            <Link href="/dashboard" className="btn btn--accent btn--lg">Start your first analysis →</Link>
           </section>
         )}
-      </section>
-    </main>
+      </main>
+    </>
   );
 }

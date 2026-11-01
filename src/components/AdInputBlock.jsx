@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, FileText, ImagePlus, Link2, UploadCloud, X } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 
 const acceptedTypes = ["image/jpeg", "image/png", "image/webp", "video/mp4", "video/quicktime", "video/webm"];
 const maxBytes = 25 * 1024 * 1024;
@@ -163,7 +163,7 @@ async function extractVideoFrames(src) {
   return { frames, duration: Number.isFinite(duration) ? Math.round(duration) : 0 };
 }
 
-export default function AdInputBlock({ title, value, onChange }) {
+export default function AdInputBlock({ title, value, onChange, onRemove }) {
   const copyLength = value.adCopy.trim().length;
   const hasCopy = copyLength > 0;
   const hasLink = value.postLink.trim().length > 0;
@@ -221,95 +221,89 @@ export default function AdInputBlock({ title, value, onChange }) {
   }
 
   return (
-    <section className="app-card workbench-card rounded-2xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
-      <div className="mb-4 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <p className="app-eyebrow text-sm font-black uppercase tracking-[0.16em] text-slate-400">{title}</p>
-          <h2 className="app-title mt-2 text-xl font-black tracking-tight text-white">Build the ad brief</h2>
+    <section className="panel" style={{ display: "grid", gap: 24 }}>
+      <div className="section-head" style={{ marginBottom: 0 }}>
+        <div style={{ display: "grid", gap: 6 }}>
+          <p className="eyebrow">{title}</p>
+          <h2 className="h3">The ad brief</h2>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <span className={`app-status-pill rounded-full border px-3 py-1 text-xs font-black ${hasCopy ? "is-active border-white/20 bg-white text-black" : "border-white/10 bg-white/5 text-slate-400"}`}>Copy</span>
-          <span className={`app-status-pill rounded-full border px-3 py-1 text-xs font-black ${hasCreative ? "is-active border-white/20 bg-white text-black" : "border-white/10 bg-white/5 text-slate-400"}`}>Creative</span>
-          <span className={`app-status-pill rounded-full border px-3 py-1 text-xs font-black ${hasLink ? "is-active border-white/20 bg-white text-black" : "border-white/10 bg-white/5 text-slate-400"}`}>Link</span>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+          <span className={`chip${hasCopy ? " chip--on" : ""}`}>Copy</span>
+          <span className={`chip${hasCreative ? " chip--on" : ""}`}>Creative</span>
+          <span className={`chip${hasLink ? " chip--on" : ""}`}>Link</span>
+          {onRemove ? (
+            <button type="button" onClick={onRemove} className="icon-btn" aria-label={`Remove ${title}`}>
+              <Trash2 size={15} />
+            </button>
+          ) : null}
         </div>
       </div>
 
-      <label className="app-input-panel input-panel mb-4 block rounded-2xl border border-white/10 bg-black/20 p-4 transition focus-within:border-white/20 focus-within:bg-white/[0.045]">
-        <span className="app-label mb-2 flex items-center justify-between gap-3 text-sm font-bold text-slate-200">
-          <span className="inline-flex items-center gap-2"><FileText size={15} /> Ad Copy</span>
-          <span className="app-muted text-xs font-bold text-slate-500">{copyLength} chars</span>
-        </span>
+      <label className="field">
+        <span className="field__label"><span>Ad copy</span><span style={{ color: "var(--ink3)" }}>{copyLength} chars</span></span>
         <textarea
           value={value.adCopy}
           onChange={(event) => patch({ adCopy: event.target.value, error: "" })}
-          placeholder="Paste the exact ad copy your audience will see. Hooks, body copy, offer, CTA..."
-          className="app-control min-h-40 w-full resize-y rounded-xl border p-4 text-sm leading-6 outline-none transition"
+          placeholder="Paste the exact ad copy your audience will see: hook, body, offer, CTA."
+          className="textarea"
         />
       </label>
 
-      <label className="app-input-panel input-panel mb-4 block rounded-2xl border border-white/10 bg-black/20 p-4 transition focus-within:border-white/20 focus-within:bg-white/[0.045]">
-        <span className="app-label mb-2 flex items-center gap-2 text-sm font-bold text-slate-200"><Link2 size={15} /> Ad Post Link</span>
-        <div className="relative">
-          <Link2 className="app-muted absolute left-3 top-3.5 text-slate-500" size={16} />
-          <input
-            value={value.postLink}
-            onChange={(event) => handlePostLinkChange(event.target.value)}
-            placeholder="Paste Facebook, Instagram, TikTok, LinkedIn, or Google ad link"
-            className="app-control w-full rounded-xl border py-3 pl-10 pr-3 text-sm outline-none transition"
-          />
-        </div>
+      <label className="field">
+        <span className="field__label">Ad / post link</span>
+        <input
+          value={value.postLink}
+          onChange={(event) => handlePostLinkChange(event.target.value)}
+          placeholder="Facebook, Instagram, TikTok, LinkedIn or Google ad link"
+          className="input"
+          inputMode="url"
+        />
         {value.detectedPlatform ? (
-          <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-300/10 px-3 py-1 text-xs font-bold text-emerald-200">
-            <BadgeCheck size={13} />
-            Platform detected: {value.detectedPlatform}
-          </div>
+          <p className="hint hint--ok">PLATFORM DETECTED · {value.detectedPlatform.toUpperCase()}</p>
         ) : value.postLink.trim() && !value.error ? (
-          <p className="mt-2 text-xs leading-5 text-slate-500">No supported platform detected from this link yet. You can still select the platform manually.</p>
+          <p className="hint">No supported platform detected from this link. You can still pick the platform yourself.</p>
         ) : null}
       </label>
 
-      <div className="app-input-panel input-panel rounded-2xl border border-white/10 bg-black/20 p-4">
-        <span className="app-label mb-2 flex items-center gap-2 text-sm font-bold text-slate-200"><ImagePlus size={15} /> Ad Creative Upload</span>
+      <div className="field">
+        <span className="field__label">Creative</span>
         {value.creativePreview ? (
-          <div className="rounded-xl border border-white/10 bg-slate-950/80 p-3">
-            <div className="mb-3 flex items-center justify-between gap-3">
-              <div>
-                <p className="app-title text-sm font-bold text-white">{value.creativeFilename}</p>
-                <p className="app-muted text-xs text-slate-500">
+          <div className="preview">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+              <div style={{ minWidth: 0 }}>
+                <p style={{ margin: 0, fontWeight: 500, overflowWrap: "anywhere" }}>{value.creativeFilename}</p>
+                <p className="meta" style={{ marginTop: 4 }}>
                   {value.creativeType === "video"
-                    ? `Video Hook Audit ready${value.videoDuration ? ` · ${value.videoDuration}s detected` : ""}${value.videoFrames?.length ? ` · ${value.videoFrames.length} sampled key frames` : ""}.`
-                    : "Preview only on Free. AI image analysis is included in Plus."}
+                    ? `VIDEO HOOK AUDIT READY${value.videoDuration ? ` · ${value.videoDuration}S` : ""}${value.videoFrames?.length ? ` · ${value.videoFrames.length} KEY FRAMES` : ""}`
+                    : "IMAGE · AI IMAGE ANALYSIS ON PLUS AND PRO"}
                 </p>
               </div>
-              <button type="button" onClick={clearCreative} className="rounded-lg border border-white/10 p-2 text-slate-300 hover:bg-white/10" aria-label="Remove creative">
+              <button type="button" onClick={clearCreative} className="icon-btn" aria-label="Remove creative">
                 <X size={15} />
               </button>
             </div>
             {value.creativeType === "image" ? (
-              <img src={value.creativePreview} alt="" className="max-h-72 w-full rounded-lg object-contain" />
+              <img src={value.creativePreview} alt="Uploaded creative preview" />
             ) : (
-              <>
-                <video src={value.creativePreview} controls onLoadedMetadata={handleVideoMetadata} className="max-h-72 w-full rounded-lg" />
-                <p className="app-muted mt-3 rounded-lg border border-white/10 bg-white/[0.035] p-3 text-xs leading-5 text-slate-500">
-                  Video Hook Audit uses sampled key frames to evaluate scroll-stop potential, visual clarity, and offer visibility. It does not analyze full video, audio, or transcripts yet.
-                </p>
-              </>
+              <video src={value.creativePreview} controls onLoadedMetadata={handleVideoMetadata} />
             )}
+            {value.creativeType === "video" ? (
+              <p className="hint">Video Hook Audit reads sampled key frames from the opening. It does not analyze the full video, audio or transcript.</p>
+            ) : null}
           </div>
         ) : (
-          <label className="app-upload upload-dropzone flex cursor-pointer flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-white/15 bg-slate-950/80 p-5 text-center text-sm text-slate-400 transition hover:border-white/25 hover:bg-white/[0.035]">
-            <span className="app-icon-box flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-white">
-              <UploadCloud size={22} />
+          <label className="dropzone">
+            <span className="dropzone__inner">
+              <span style={{ fontWeight: 500 }}>Add an image or video creative</span>
+              <span className="hint">JPG, PNG, WEBP, MP4, MOV or WEBM, up to 25MB.</span>
+              <span className="btn btn--primary" style={{ marginTop: 6 }}>Choose file</span>
             </span>
-            <span className="app-label font-bold text-slate-200">Drop in an image or video creative</span>
-            <span className="app-muted max-w-md text-xs leading-5 text-slate-500">JPG, PNG, WEBP, MP4, MOV, WEBM up to 25MB. Video Hook Audit uses sampled key frames and does not analyze full video, audio, or transcripts yet.</span>
-            <span className="app-upload-button rounded-full bg-white px-4 py-2 text-xs font-black text-black">Choose creative</span>
-            <input type="file" accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" className="hidden" onChange={(event) => handleFile(event.target.files?.[0])} />
+            <input type="file" accept=".jpg,.jpeg,.png,.webp,.mp4,.mov,.webm,image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm" hidden onChange={(event) => handleFile(event.target.files?.[0])} />
           </label>
         )}
       </div>
 
-      {value.error ? <p className="mt-3 rounded-lg border border-rose-400/25 bg-rose-400/10 p-3 text-sm text-rose-200">{value.error}</p> : null}
+      {value.error ? <p className="notice notice--error">{value.error}</p> : null}
     </section>
   );
 }

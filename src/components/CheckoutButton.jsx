@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useAuth } from "./AuthProvider";
 
 export default function CheckoutButton({ plan, children, featured = false }) {
@@ -39,20 +39,12 @@ export default function CheckoutButton({ plan, children, featured = false }) {
   }
 
   return (
-    <div>
-      <button
-        type="button"
-        onClick={checkout}
-        disabled={loading}
-        className={`mt-6 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-sm font-black transition disabled:cursor-not-allowed disabled:opacity-45 ${
-          featured ? "app-primary-action bg-cyan-300 text-slate-950 hover:bg-cyan-200" : "app-secondary-action border border-white/10 bg-white/5 text-white hover:bg-white/10"
-        }`}
-      >
-        {loading ? <Loader2 className="animate-spin" size={16} /> : null}
-        {loading ? "Opening checkout..." : children}
-        {!loading ? <ArrowRight size={16} /> : null}
+    <div style={{ display: "grid", gap: 10 }}>
+      <button type="button" onClick={checkout} disabled={loading} className={`btn btn--block btn--lg ${featured ? "btn--accent" : "btn--primary"}`}>
+        {loading ? <Loader2 className="spin" size={16} /> : null}
+        {loading ? "Opening checkout…" : <>{children} →</>}
       </button>
-      {error ? <p className="mt-3 rounded-lg border border-amber-300/25 bg-amber-300/10 p-3 text-xs leading-5 text-amber-100">{error}</p> : null}
+      {error ? <p className="notice notice--warn">{error}</p> : null}
     </div>
   );
 }

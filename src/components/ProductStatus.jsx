@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BadgeCheck, Info } from "lucide-react";
 
 export default function ProductStatus() {
   const [status, setStatus] = useState(null);
@@ -24,21 +23,16 @@ export default function ProductStatus() {
   if (!status) return null;
 
   return (
-    <section className="rounded-lg border border-cyan-300/20 bg-cyan-300/5 p-4">
-      <p className="flex items-center gap-2 text-sm font-bold text-cyan-200">
-        {status.aiConfigured ? <BadgeCheck size={16} /> : <Info size={16} />}
+    <div className={`notice ${status.aiConfigured ? "notice--ok" : "notice--warn"}`}>
+      <p className="eyebrow" style={{ color: "var(--ink)", marginBottom: 6 }}>
         {status.aiConfigured ? "AI scoring active" : "Demo scoring active"}
       </p>
-      <p className="mt-2 text-sm leading-6 text-slate-400">
+      <p className="small">
         {status.aiConfigured
-          ? "Adnex is connected to AI analysis. Links provide platform/context only, and Video Hook Audit reviews sampled key frames rather than full video, audio, or transcripts."
-          : "You can test the full product flow without paid AI calls. Scores, image reviews, and Video Hook Audit sections use the built-in demo engine until real AI is connected."}
+          ? "Adnex is connected to AI analysis. Links add platform context only, and Video Hook Audit reads sampled key frames, not full video, audio or transcripts."
+          : "You can try the full flow without paid AI. Scores come from the built-in demo engine until real AI is connected."}
+        {status.billingConfigured ? "" : " Billing is not fully configured yet."}
       </p>
-      <p className="mt-2 text-xs leading-5 text-slate-500">
-        {status.billingConfigured
-          ? "Auth, billing, and subscription config appear ready."
-          : "Billing is not fully configured yet. Add Supabase + Lemon Squeezy env vars before live payments."}
-      </p>
-    </section>
+    </div>
   );
 }
